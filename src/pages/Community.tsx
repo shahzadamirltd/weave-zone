@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { 
   ArrowLeft, Users, Lock, Globe, MessageSquare, Heart, 
-  Sparkles, Send, Image as ImageIcon, Video
+  Sparkles, Send, Image as ImageIcon, Video, Share2, Reply
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
@@ -23,6 +23,10 @@ export default function Community() {
   const queryClient = useQueryClient();
   const [postContent, setPostContent] = useState("");
   const [commentContent, setCommentContent] = useState<{ [key: string]: string }>({});
+  const [replyingTo, setReplyingTo] = useState<{ [key: string]: string | null }>({});
+  const [mediaFiles, setMediaFiles] = useState<File[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: profile } = useQuery({
     queryKey: ["profile"],
@@ -78,12 +82,35 @@ export default function Community() {
     queryFn: async () => {
       const { data } = await supabase
         .from("posts")
-        .select("*, profiles(*), comments(count), reactions(count)")
+        .select(`
+          *,
+          profiles(*),
+          reactions(id, user_id, type)
+        `)
         .eq("community_id", id)
         .order("created_at", { ascending: false });
       return data || [];
     },
     enabled: !!membership,
+  });
+
+  const { data: commentsData } = useQuery({
+    queryKey: ["comments", id],
+    queryFn: async () => {
+      if (!posts) return [];
+      const postIds = posts.map((p: any) => p.id);
+      const { data } = await supabase
+        .from("comments")
+        .select(`
+          *,
+          profiles(*),
+          comment_reactions(id, user_id, type)
+        `)
+        .in("post_id", postIds)
+        .order("created_at", { ascending: true });
+      return data || [];
+    },
+    enabled: !!posts && posts.length > 0,
   });
 
   // Set up realtime subscription for posts
@@ -129,37 +156,75 @@ export default function Community() {
     },
   });
 
+  const handleMediaUpload = async (files: File[]): Promise<string[]> => {
+    const uploadedUrls: string[] = [];
+    
+    for (const file of files) {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${profile?.id}/${Math.random()}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('community-media')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('community-media')
+        .getPublicUrl(fileName);
+      
+      uploadedUrls.push(publicUrl);
+    }
+    
+    return uploadedUrls;
+  };
+
   const createPostMutation = useMutation({
     mutationFn: async () => {
       if (!profile) throw new Error("Not authenticated");
+      
+      let mediaUrls: string[] = [];
+      if (mediaFiles.length > 0) {
+        setUploading(true);
+        mediaUrls = await handleMediaUpload(mediaFiles);
+      }
+      
       const { error } = await supabase.from("posts").insert({
         community_id: id,
         author_id: profile.id,
         content: postContent,
+        media_urls: mediaUrls.length > 0 ? mediaUrls : null,
       });
       if (error) throw error;
     },
     onSuccess: () => {
       setPostContent("");
+      setMediaFiles([]);
+      setUploading(false);
       queryClient.invalidateQueries({ queryKey: ["posts", id] });
       toast({ title: "Success!", description: "Post created" });
+    },
+    onError: () => {
+      setUploading(false);
     },
   });
 
   const createCommentMutation = useMutation({
-    mutationFn: async (postId: string) => {
+    mutationFn: async ({ postId, parentId }: { postId: string; parentId?: string }) => {
       if (!profile) throw new Error("Not authenticated");
       const { error } = await supabase.from("comments").insert({
         post_id: postId,
         author_id: profile.id,
         content: commentContent[postId] || "",
+        parent_id: parentId || null,
       });
       if (error) throw error;
       return postId;
     },
     onSuccess: (postId) => {
       setCommentContent((prev) => ({ ...prev, [postId]: "" }));
-      queryClient.invalidateQueries({ queryKey: ["posts", id] });
+      setReplyingTo((prev) => ({ ...prev, [postId]: null }));
+      queryClient.invalidateQueries({ queryKey: ["comments", id] });
       toast({ title: "Success!", description: "Comment added" });
     },
   });
@@ -168,7 +233,6 @@ export default function Community() {
     mutationFn: async (postId: string) => {
       if (!profile) throw new Error("Not authenticated");
       
-      // Check if reaction exists
       const { data: existing } = await supabase
         .from("reactions")
         .select("*")
@@ -193,6 +257,41 @@ export default function Community() {
       queryClient.invalidateQueries({ queryKey: ["posts", id] });
     },
   });
+
+  const toggleCommentReactionMutation = useMutation({
+    mutationFn: async (commentId: string) => {
+      if (!profile) throw new Error("Not authenticated");
+      
+      const { data: existing } = await supabase
+        .from("comment_reactions")
+        .select("*")
+        .eq("comment_id", commentId)
+        .eq("user_id", profile.id)
+        .eq("type", "like")
+        .maybeSingle();
+
+      if (existing) {
+        const { error } = await supabase.from("comment_reactions").delete().eq("id", existing.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("comment_reactions").insert({
+          comment_id: commentId,
+          user_id: profile.id,
+          type: "like",
+        });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["comments", id] });
+    },
+  });
+
+  const handleShare = () => {
+    const shareUrl = `${window.location.origin}/community/${id}`;
+    navigator.clipboard.writeText(shareUrl);
+    toast({ title: "Link copied!", description: "Community link copied to clipboard" });
+  };
 
   if (!community) {
     return (
@@ -268,9 +367,15 @@ export default function Community() {
             </div>
             <p className="text-muted-foreground mt-1">{community.description}</p>
           </div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Users className="h-4 w-4" />
-            <span>{members?.length || 0} members</span>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Users className="h-4 w-4" />
+              <span>{members?.length || 0} members</span>
+            </div>
+            <Button variant="outline" size="sm" onClick={handleShare} className="gap-2">
+              <Share2 className="h-4 w-4" />
+              Share
+            </Button>
           </div>
         </div>
 
@@ -284,23 +389,43 @@ export default function Community() {
                 onChange={(e) => setPostContent(e.target.value)}
                 rows={3}
               />
+              {mediaFiles.length > 0 && (
+                <div className="flex gap-2 flex-wrap">
+                  {mediaFiles.map((file, idx) => (
+                    <Badge key={idx} variant="secondary">{file.name}</Badge>
+                  ))}
+                </div>
+              )}
               <div className="flex items-center justify-between">
                 <div className="flex gap-2">
-                  <Button variant="ghost" size="sm" disabled>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*,video/*"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => {
+                      if (e.target.files) {
+                        setMediaFiles(Array.from(e.target.files));
+                      }
+                    }}
+                  />
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
                     <ImageIcon className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="sm" disabled>
-                    <Video className="h-4 w-4" />
                   </Button>
                 </div>
                 <Button
                   onClick={() => createPostMutation.mutate()}
-                  disabled={!postContent.trim() || createPostMutation.isPending}
+                  disabled={!postContent.trim() || createPostMutation.isPending || uploading}
                   size="sm"
                   className="gap-2"
                 >
                   <Send className="h-4 w-4" />
-                  Post
+                  {uploading ? "Uploading..." : "Post"}
                 </Button>
               </div>
             </div>
@@ -328,6 +453,19 @@ export default function Community() {
                         </span>
                       </div>
                       <p className="text-sm whitespace-pre-wrap">{post.content}</p>
+                      {post.media_urls && post.media_urls.length > 0 && (
+                        <div className="grid grid-cols-2 gap-2 mt-3">
+                          {post.media_urls.map((url: string, idx: number) => (
+                            <div key={idx} className="rounded-lg overflow-hidden">
+                              {url.match(/\.(mp4|webm|ogg)$/i) ? (
+                                <video src={url} controls className="w-full" />
+                              ) : (
+                                <img src={url} alt="Post media" className="w-full object-cover" />
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </CardHeader>
@@ -339,16 +477,92 @@ export default function Community() {
                       className="gap-2"
                       onClick={() => toggleReactionMutation.mutate(post.id)}
                     >
-                      <Heart className="h-4 w-4" />
-                      {post.reactions?.[0]?.count || 0}
+                      <Heart className={`h-4 w-4 ${post.reactions?.some((r: any) => r.user_id === profile?.id) ? 'fill-red-500 text-red-500' : ''}`} />
+                      {post.reactions?.length || 0}
                     </Button>
                     <Button variant="ghost" size="sm" className="gap-2">
                       <MessageSquare className="h-4 w-4" />
-                      {post.comments?.[0]?.count || 0}
+                      {commentsData?.filter((c: any) => c.post_id === post.id).length || 0}
                     </Button>
                   </div>
 
+                  {/* Comments Section */}
                   <div className="space-y-3 border-t pt-4">
+                    {commentsData?.filter((c: any) => c.post_id === post.id && !c.parent_id).map((comment: any) => (
+                      <div key={comment.id} className="space-y-2">
+                        <div className="flex gap-2">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={comment.profiles?.avatar_url} />
+                            <AvatarFallback>
+                              {comment.profiles?.username?.[0]?.toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 space-y-1">
+                            <div className="bg-muted rounded-lg px-3 py-2">
+                              <div className="font-semibold text-sm">{comment.profiles?.username}</div>
+                              <p className="text-sm">{comment.content}</p>
+                            </div>
+                            <div className="flex items-center gap-3 px-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-auto p-0 text-xs"
+                                onClick={() => toggleCommentReactionMutation.mutate(comment.id)}
+                              >
+                                <Heart className={`h-3 w-3 mr-1 ${comment.comment_reactions?.some((r: any) => r.user_id === profile?.id) ? 'fill-red-500 text-red-500' : ''}`} />
+                                {comment.comment_reactions?.length || 0}
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-auto p-0 text-xs"
+                                onClick={() => setReplyingTo((prev) => ({ ...prev, [post.id]: comment.id }))}
+                              >
+                                <Reply className="h-3 w-3 mr-1" />
+                                Reply
+                              </Button>
+                              <span className="text-xs text-muted-foreground">
+                                {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Replies */}
+                        {commentsData?.filter((r: any) => r.parent_id === comment.id).map((reply: any) => (
+                          <div key={reply.id} className="ml-10 flex gap-2">
+                            <Avatar className="h-7 w-7">
+                              <AvatarImage src={reply.profiles?.avatar_url} />
+                              <AvatarFallback>
+                                {reply.profiles?.username?.[0]?.toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 space-y-1">
+                              <div className="bg-muted rounded-lg px-3 py-2">
+                                <div className="font-semibold text-sm">{reply.profiles?.username}</div>
+                                <p className="text-sm">{reply.content}</p>
+                              </div>
+                              <div className="flex items-center gap-3 px-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-auto p-0 text-xs"
+                                  onClick={() => toggleCommentReactionMutation.mutate(reply.id)}
+                                >
+                                  <Heart className={`h-3 w-3 mr-1 ${reply.comment_reactions?.some((r: any) => r.user_id === profile?.id) ? 'fill-red-500 text-red-500' : ''}`} />
+                                  {reply.comment_reactions?.length || 0}
+                                </Button>
+                                <span className="text-xs text-muted-foreground">
+                                  {formatDistanceToNow(new Date(reply.created_at), { addSuffix: true })}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                    
+                    {/* Add Comment */}
                     <div className="flex gap-2">
                       <Avatar className="h-8 w-8">
                         <AvatarImage src={profile?.avatar_url} />
@@ -358,7 +572,7 @@ export default function Community() {
                       </Avatar>
                       <div className="flex-1 flex gap-2">
                         <Input
-                          placeholder="Add a comment..."
+                          placeholder={replyingTo[post.id] ? "Add a reply..." : "Add a comment..."}
                           value={commentContent[post.id] || ""}
                           onChange={(e) =>
                             setCommentContent((prev) => ({
@@ -369,13 +583,13 @@ export default function Community() {
                           onKeyDown={(e) => {
                             if (e.key === "Enter" && !e.shiftKey) {
                               e.preventDefault();
-                              createCommentMutation.mutate(post.id);
+                              createCommentMutation.mutate({ postId: post.id, parentId: replyingTo[post.id] || undefined });
                             }
                           }}
                         />
                         <Button
                           size="sm"
-                          onClick={() => createCommentMutation.mutate(post.id)}
+                          onClick={() => createCommentMutation.mutate({ postId: post.id, parentId: replyingTo[post.id] || undefined })}
                           disabled={
                             !commentContent[post.id]?.trim() ||
                             createCommentMutation.isPending

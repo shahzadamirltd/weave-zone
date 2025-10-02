@@ -168,10 +168,14 @@ export default function Community() {
       });
       if (error) throw error;
     },
+    onMutate: () => {
+      toast({ title: "Joining...", description: "Adding you to the community" });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["membership", id, profile?.id] });
       queryClient.invalidateQueries({ queryKey: ["members", id] });
-      toast({ title: "Success!", description: "Joined community" });
+      queryClient.invalidateQueries({ queryKey: ["paid-access", id, profile?.id] });
+      toast({ title: "Success!", description: "You're now a member!" });
     },
     onError: (error: any) => {
       toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -275,7 +279,31 @@ export default function Community() {
         if (error) throw error;
       }
     },
-    onSuccess: () => {
+    onMutate: async (postId) => {
+      await queryClient.cancelQueries({ queryKey: ["posts", id] });
+      const previousPosts = queryClient.getQueryData(["posts", id]);
+      
+      queryClient.setQueryData(["posts", id], (old: any) => {
+        return old?.map((post: any) => {
+          if (post.id === postId) {
+            const hasReaction = post.reactions?.some((r: any) => r.user_id === profile?.id);
+            return {
+              ...post,
+              reactions: hasReaction
+                ? post.reactions.filter((r: any) => r.user_id !== profile?.id)
+                : [...(post.reactions || []), { user_id: profile?.id, type: "like" }]
+            };
+          }
+          return post;
+        });
+      });
+      
+      return { previousPosts };
+    },
+    onError: (err, postId, context: any) => {
+      queryClient.setQueryData(["posts", id], context.previousPosts);
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["posts", id] });
     },
   });

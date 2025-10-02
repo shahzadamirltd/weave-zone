@@ -41,6 +41,34 @@ export default function CreateCommunity() {
         return;
       }
 
+      // Validate minimum price
+      if (pricingType !== "free" && parseFloat(price) < 20) {
+        toast({
+          title: "Invalid Price",
+          description: "Minimum price is $20",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // Check for unique community name
+      const { data: existingCommunity } = await supabase
+        .from("communities")
+        .select("id")
+        .ilike("name", name)
+        .single();
+
+      if (existingCommunity) {
+        toast({
+          title: "Name Already Taken",
+          description: "This community name is already in use. Please choose another.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
       const inviteCode = isPrivate ? Math.random().toString(36).substring(2, 10) : null;
 
       const { data: community, error } = await supabase
@@ -167,12 +195,13 @@ export default function CreateCommunity() {
                     name="price"
                     type="number"
                     step="0.01"
-                    min="0.01"
-                    placeholder="9.99"
+                    min="20"
+                    placeholder="20.00"
                     value={price}
                     onChange={(e) => setPrice(e.target.value)}
                     required
                   />
+                  <p className="text-sm text-muted-foreground">Minimum price is $20</p>
                 </div>
               )}
 

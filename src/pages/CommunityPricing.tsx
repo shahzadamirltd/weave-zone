@@ -43,11 +43,29 @@ const CommunityPricing = () => {
       if (data.url) {
         window.open(data.url, "_blank");
         
-        // After opening checkout, wait for payment confirmation
         toast({
-          title: "Checkout opened",
-          description: "Complete your payment in the new tab, then return here.",
+          title: "Payment processing",
+          description: "Complete payment in new tab. You'll be redirected automatically.",
         });
+
+        // Poll for payment completion
+        const checkPayment = setInterval(async () => {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) return;
+
+          const { data: hasAccess } = await supabase.rpc("has_paid_access", {
+            _user_id: user.id,
+            _community_id: id,
+          });
+
+          if (hasAccess) {
+            clearInterval(checkPayment);
+            toast({ title: "Success!", description: "Payment confirmed! Redirecting..." });
+            setTimeout(() => navigate(`/community/${id}`), 1000);
+          }
+        }, 2000);
+
+        setTimeout(() => clearInterval(checkPayment), 300000); // Stop after 5 min
       }
     } catch (error: any) {
       toast({

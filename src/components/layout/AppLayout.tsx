@@ -89,6 +89,11 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
             <span className="text-xs">Profile</span>
           </Button>
         </div>
+        
+        {/* Copyright */}
+        <div className="text-center py-2 text-xs text-muted-foreground border-t">
+          © Buyverly Ltd. All rights reserved
+        </div>
       </nav>
     </div>
   );

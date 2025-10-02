@@ -26,8 +26,11 @@ export default function CreateCommunity() {
     const description = formData.get("description") as string;
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      // Get current user session
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session?.user) {
+        throw new Error("You must be logged in to create a community");
+      }
 
       const inviteCode = isPrivate ? Math.random().toString(36).substring(2, 10) : null;
 
@@ -36,14 +39,17 @@ export default function CreateCommunity() {
         .insert({
           name,
           description,
-          owner_id: user.id,
+          owner_id: session.user.id,
           is_private: isPrivate,
           invite_code: inviteCode,
         })
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Database error:", error);
+        throw error;
+      }
 
       toast({
         title: "Success!",
@@ -52,9 +58,10 @@ export default function CreateCommunity() {
 
       navigate(`/community/${community.id}`);
     } catch (error: any) {
+      console.error("Create community error:", error);
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Failed to create community",
         variant: "destructive",
       });
     } finally {

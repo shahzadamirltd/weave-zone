@@ -140,15 +140,18 @@ export default function Community() {
 
   const joinMutation = useMutation({
     mutationFn: async () => {
-      if (!profile) throw new Error("Not authenticated");
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+      
       const { error } = await supabase.from("memberships").insert({
         community_id: id,
-        user_id: profile.id,
+        user_id: user.id,
       });
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["membership", id, profile?.id] });
+      queryClient.invalidateQueries({ queryKey: ["members", id] });
       toast({ title: "Success!", description: "Joined community" });
     },
     onError: (error: any) => {

@@ -57,7 +57,7 @@ export default function CreateCommunity() {
         .from("communities")
         .select("id")
         .ilike("name", name)
-        .single();
+        .maybeSingle();
 
       if (existingCommunity) {
         toast({

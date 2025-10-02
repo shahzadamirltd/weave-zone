@@ -14,8 +14,10 @@ import { ArrowLeft } from "lucide-react";
 export default function CreateCommunity() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
   const [isPrivate, setIsPrivate] = useState(false);
+  const [pricingType, setPricingType] = useState<"free" | "one_time" | "lifetime" | "recurring_monthly">("free");
+  const [price, setPrice] = useState("");
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -49,6 +51,8 @@ export default function CreateCommunity() {
           owner_id: user.id,
           is_private: isPrivate,
           invite_code: inviteCode,
+          pricing_type: pricingType,
+          price_amount: pricingType !== "free" && price ? parseFloat(price) : null,
         })
         .select()
         .single();
@@ -139,6 +143,38 @@ export default function CreateCommunity() {
                   onCheckedChange={setIsPrivate}
                 />
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="pricing">Pricing Type</Label>
+                <select
+                  id="pricing"
+                  className="w-full px-3 py-2 border rounded-md bg-background"
+                  value={pricingType}
+                  onChange={(e) => setPricingType(e.target.value as any)}
+                >
+                  <option value="free">Free</option>
+                  <option value="one_time">One-Time Payment</option>
+                  <option value="lifetime">Lifetime Access</option>
+                  <option value="recurring_monthly">Monthly Subscription</option>
+                </select>
+              </div>
+
+              {pricingType !== "free" && (
+                <div className="space-y-2">
+                  <Label htmlFor="price">Price ($)</Label>
+                  <Input
+                    id="price"
+                    name="price"
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    placeholder="9.99"
+                    value={price}
+                    onChange={(e) => setPrice(e.target.value)}
+                    required
+                  />
+                </div>
+              )}
 
               <div className="flex gap-3 pt-4">
                 <Button

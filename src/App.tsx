@@ -10,6 +10,8 @@ import Dashboard from "./pages/Dashboard";
 import CreateCommunity from "./pages/CreateCommunity";
 import Community from "./pages/Community";
 import Profile from "./pages/Profile";
+import CommunityPricing from "./pages/CommunityPricing";
+import CreatorDashboard from "./pages/CreatorDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -74,6 +76,22 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <Profile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/community/:id/pricing"
+            element={
+              <ProtectedRoute>
+                <CommunityPricing />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/creator-dashboard"
+            element={
+              <ProtectedRoute>
+                <CreatorDashboard />
               </ProtectedRoute>
             }
           />

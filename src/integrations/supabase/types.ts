@@ -100,6 +100,7 @@ export type Database = {
       }
       communities: {
         Row: {
+          approval_required: boolean
           avatar_url: string | null
           created_at: string
           description: string | null
@@ -108,9 +109,16 @@ export type Database = {
           is_private: boolean
           name: string
           owner_id: string
+          preview_enabled: boolean
+          price_amount: number | null
+          pricing_type: Database["public"]["Enums"]["pricing_type"]
+          stripe_price_id: string | null
+          stripe_product_id: string | null
+          trial_period_days: number | null
           updated_at: string
         }
         Insert: {
+          approval_required?: boolean
           avatar_url?: string | null
           created_at?: string
           description?: string | null
@@ -119,9 +127,16 @@ export type Database = {
           is_private?: boolean
           name: string
           owner_id: string
+          preview_enabled?: boolean
+          price_amount?: number | null
+          pricing_type?: Database["public"]["Enums"]["pricing_type"]
+          stripe_price_id?: string | null
+          stripe_product_id?: string | null
+          trial_period_days?: number | null
           updated_at?: string
         }
         Update: {
+          approval_required?: boolean
           avatar_url?: string | null
           created_at?: string
           description?: string | null
@@ -130,6 +145,12 @@ export type Database = {
           is_private?: boolean
           name?: string
           owner_id?: string
+          preview_enabled?: boolean
+          price_amount?: number | null
+          pricing_type?: Database["public"]["Enums"]["pricing_type"]
+          stripe_price_id?: string | null
+          stripe_product_id?: string | null
+          trial_period_days?: number | null
           updated_at?: string
         }
         Relationships: [
@@ -138,6 +159,62 @@ export type Database = {
             columns: ["owner_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coupon_codes: {
+        Row: {
+          active: boolean
+          code: string
+          community_id: string | null
+          created_at: string
+          created_by: string
+          discount_type: string
+          discount_value: number
+          expires_at: string | null
+          id: string
+          max_uses: number | null
+          stripe_coupon_id: string | null
+          times_used: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          community_id?: string | null
+          created_at?: string
+          created_by: string
+          discount_type: string
+          discount_value: number
+          expires_at?: string | null
+          id?: string
+          max_uses?: number | null
+          stripe_coupon_id?: string | null
+          times_used?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          community_id?: string | null
+          created_at?: string
+          created_by?: string
+          discount_type?: string
+          discount_value?: number
+          expires_at?: string | null
+          id?: string
+          max_uses?: number | null
+          stripe_coupon_id?: string | null
+          times_used?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupon_codes_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
             referencedColumns: ["id"]
           },
         ]
@@ -180,6 +257,139 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      payments: {
+        Row: {
+          amount: number
+          community_id: string
+          created_at: string
+          creator_earnings: number
+          id: string
+          payment_type: Database["public"]["Enums"]["pricing_type"]
+          platform_fee: number
+          status: string
+          stripe_checkout_session_id: string | null
+          stripe_payment_intent_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          community_id: string
+          created_at?: string
+          creator_earnings: number
+          id?: string
+          payment_type: Database["public"]["Enums"]["pricing_type"]
+          platform_fee: number
+          status?: string
+          stripe_checkout_session_id?: string | null
+          stripe_payment_intent_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          community_id?: string
+          created_at?: string
+          creator_earnings?: number
+          id?: string
+          payment_type?: Database["public"]["Enums"]["pricing_type"]
+          platform_fee?: number
+          status?: string
+          stripe_checkout_session_id?: string | null
+          stripe_payment_intent_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payouts: {
+        Row: {
+          amount: number
+          community_id: string
+          created_at: string
+          creator_id: string
+          id: string
+          notes: string | null
+          payment_details: Json | null
+          payment_method: string | null
+          processed_at: string | null
+          processed_by: string | null
+          requested_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          community_id: string
+          created_at?: string
+          creator_id: string
+          id?: string
+          notes?: string | null
+          payment_details?: Json | null
+          payment_method?: string | null
+          processed_at?: string | null
+          processed_by?: string | null
+          requested_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          community_id?: string
+          created_at?: string
+          creator_id?: string
+          id?: string
+          notes?: string | null
+          payment_details?: Json | null
+          payment_method?: string | null
+          processed_at?: string | null
+          processed_by?: string | null
+          requested_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payouts_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      platform_config: {
+        Row: {
+          created_at: string
+          grace_period_days: number
+          id: string
+          platform_fee_percentage: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          grace_period_days?: number
+          id?: string
+          platform_fee_percentage?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          grace_period_days?: number
+          id?: string
+          platform_fee_percentage?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       posts: {
         Row: {
@@ -292,18 +502,135 @@ export type Database = {
           },
         ]
       }
+      refund_requests: {
+        Row: {
+          admin_notes: string | null
+          community_id: string
+          created_at: string
+          id: string
+          payment_id: string
+          processed_at: string | null
+          processed_by: string | null
+          reason: string
+          status: string
+          stripe_refund_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          community_id: string
+          created_at?: string
+          id?: string
+          payment_id: string
+          processed_at?: string | null
+          processed_by?: string | null
+          reason: string
+          status?: string
+          stripe_refund_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          community_id?: string
+          created_at?: string
+          id?: string
+          payment_id?: string
+          processed_at?: string | null
+          processed_by?: string | null
+          reason?: string
+          status?: string
+          stripe_refund_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "refund_requests_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "refund_requests_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscriptions: {
+        Row: {
+          cancel_at_period_end: boolean
+          community_id: string
+          created_at: string
+          current_period_end: string
+          current_period_start: string
+          grace_period_end: string | null
+          id: string
+          status: string
+          stripe_customer_id: string
+          stripe_subscription_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cancel_at_period_end?: boolean
+          community_id: string
+          created_at?: string
+          current_period_end: string
+          current_period_start: string
+          grace_period_end?: string | null
+          id?: string
+          status?: string
+          stripe_customer_id: string
+          stripe_subscription_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cancel_at_period_end?: boolean
+          community_id?: string
+          created_at?: string
+          current_period_end?: string
+          current_period_start?: string
+          grace_period_end?: string | null
+          id?: string
+          status?: string
+          stripe_customer_id?: string
+          stripe_subscription_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      has_paid_access: {
+        Args: { _community_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_community_member: {
         Args: { _community_id: string; _user_id: string }
         Returns: boolean
       }
     }
     Enums: {
-      [_ in never]: never
+      pricing_type: "free" | "one_time" | "lifetime" | "recurring_monthly"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -430,6 +757,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      pricing_type: ["free", "one_time", "lifetime", "recurring_monthly"],
+    },
   },
 } as const

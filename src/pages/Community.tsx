@@ -65,6 +65,25 @@ export default function Community() {
     enabled: !!profile,
   });
 
+  const { data: hasAccess } = useQuery({
+    queryKey: ["paid-access", id, profile?.id],
+    queryFn: async () => {
+      if (!profile) return false;
+      
+      const { data, error } = await supabase.rpc("has_paid_access", {
+        _user_id: profile.id,
+        _community_id: id,
+      });
+      
+      if (error) {
+        console.error("Error checking paid access:", error);
+        return false;
+      }
+      return data;
+    },
+    enabled: !!profile && !!id,
+  });
+
   const { data: members } = useQuery({
     queryKey: ["members", id],
     queryFn: async () => {
@@ -306,7 +325,36 @@ export default function Community() {
     );
   }
 
-  if (!membership) {
+  const needsPayment = community.pricing_type !== "free" && !hasAccess && community.owner_id !== profile?.id;
+
+  if (needsPayment) {
+    return (
+      <AppLayout>
+        <div className="container mx-auto p-4 max-w-2xl">
+          <Card>
+            <CardHeader>
+              <div className="text-center space-y-4">
+                <h2 className="text-3xl font-bold">{community.name}</h2>
+                <p className="text-muted-foreground">{community.description}</p>
+                <div className="py-6">
+                  <p className="text-lg mb-2">This is a paid community</p>
+                  <p className="text-4xl font-bold text-primary">${community.price_amount}</p>
+                  {community.pricing_type === "recurring_monthly" && (
+                    <p className="text-sm text-muted-foreground">per month</p>
+                  )}
+                </div>
+                <Button size="lg" onClick={() => navigate(`/community/${id}/pricing`)}>
+                  View Pricing & Join
+                </Button>
+              </div>
+            </CardHeader>
+          </Card>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (!membership && !hasAccess) {
     return (
       <AppLayout>
         <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">

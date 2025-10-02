@@ -60,12 +60,21 @@ serve(async (req) => {
           });
         }
 
-        // Add user as member
-        await supabaseClient.from("memberships").insert({
-          user_id: user.id,
-          community_id: payment.community_id,
-          role: "member",
-        }).onConflict("user_id, community_id").merge();
+        // Add user as member if not exists
+        const { data: existing } = await supabaseClient
+          .from("memberships")
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("community_id", payment.community_id)
+          .maybeSingle();
+
+        if (!existing) {
+          await supabaseClient.from("memberships").insert({
+            user_id: user.id,
+            community_id: payment.community_id,
+            role: "member",
+          });
+        }
       }
 
       return new Response(JSON.stringify({ success: true, payment }), {
@@ -76,7 +85,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({ success: false }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Payment check error:", error);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

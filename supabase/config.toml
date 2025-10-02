@@ -8,3 +8,6 @@ verify_jwt = true
 
 [functions.request-payout]
 verify_jwt = true
+
+[functions.create-stripe-product]
+verify_jwt = true

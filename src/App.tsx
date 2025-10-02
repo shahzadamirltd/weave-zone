@@ -12,6 +12,7 @@ import Community from "./pages/Community";
 import Profile from "./pages/Profile";
 import CommunityPricing from "./pages/CommunityPricing";
 import CreatorDashboard from "./pages/CreatorDashboard";
+import StripeSetup from "./pages/StripeSetup";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -92,6 +93,14 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <CreatorDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/stripe-setup"
+            element={
+              <ProtectedRoute>
+                <StripeSetup />
               </ProtectedRoute>
             }
           />

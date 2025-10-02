@@ -2,10 +2,11 @@ import { ReactNode } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Home, Plus, User } from "lucide-react";
+import { Home, Plus, Settings, Video } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
+import { NotificationBell } from "@/components/NotificationBell";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -39,8 +40,10 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
     <div className="min-h-screen bg-background pb-20">
       {/* Top Bar */}
       <header className="fixed top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="flex h-14 items-center justify-center px-4">
+        <div className="flex h-14 items-center justify-between px-4">
+          <div className="w-10" />
           <h1 className="text-lg font-semibold">Communities</h1>
+          <NotificationBell />
         </div>
       </header>
 
@@ -49,18 +52,31 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
 
       {/* TikTok-style Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t">
-        <div className="flex items-center justify-around h-16 px-4">
+        <div className="flex items-center justify-around h-16 px-2">
           {/* Home */}
           <Button
             variant="ghost"
             size="sm"
             onClick={() => navigate("/dashboard")}
-            className={`flex flex-col items-center gap-1 h-auto py-2 px-6 ${
+            className={`flex flex-col items-center gap-1 h-auto py-2 px-3 ${
               isActive("/dashboard") ? "text-foreground" : "text-muted-foreground"
             }`}
           >
-            <Home className={`h-6 w-6 ${isActive("/dashboard") ? "fill-current" : ""}`} />
+            <Home className={`h-5 w-5 ${isActive("/dashboard") ? "fill-current" : ""}`} />
             <span className="text-xs">Home</span>
+          </Button>
+
+          {/* Live */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate("/live")}
+            className={`flex flex-col items-center gap-1 h-auto py-2 px-3 ${
+              isActive("/live") ? "text-foreground" : "text-muted-foreground"
+            }`}
+          >
+            <Video className={`h-5 w-5 ${isActive("/live") ? "fill-current" : ""}`} />
+            <span className="text-xs">Live</span>
           </Button>
 
           {/* Create - Centered with special styling */}
@@ -76,17 +92,30 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
             variant="ghost"
             size="sm"
             onClick={() => navigate("/profile")}
-            className={`flex flex-col items-center gap-1 h-auto py-2 px-6 ${
+            className={`flex flex-col items-center gap-1 h-auto py-2 px-3 ${
               isActive("/profile") ? "text-foreground" : "text-muted-foreground"
             }`}
           >
-            <Avatar className="h-6 w-6">
+            <Avatar className="h-5 w-5">
               <AvatarImage src={profile?.avatar_url || ""} />
               <AvatarFallback className={`text-xs ${isActive("/profile") ? "bg-foreground text-background" : "bg-muted"}`}>
                 {profile?.username?.[0]?.toUpperCase() || "U"}
               </AvatarFallback>
             </Avatar>
             <span className="text-xs">Profile</span>
+          </Button>
+
+          {/* Settings */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate("/settings")}
+            className={`flex flex-col items-center gap-1 h-auto py-2 px-3 ${
+              isActive("/settings") ? "text-foreground" : "text-muted-foreground"
+            }`}
+          >
+            <Settings className={`h-5 w-5 ${isActive("/settings") ? "fill-current" : ""}`} />
+            <span className="text-xs">Settings</span>
           </Button>
         </div>
         

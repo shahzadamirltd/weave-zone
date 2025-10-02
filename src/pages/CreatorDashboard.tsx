@@ -46,9 +46,10 @@ const CreatorDashboard = () => {
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       
+      // Get all payments (subscriptions, one-time, and tips)
       const { data: payments } = await supabase
         .from("payments")
-        .select("creator_earnings, community_id, communities!inner(owner_id)")
+        .select("creator_earnings, community_id, payment_type, communities!inner(owner_id)")
         .eq("communities.owner_id", user?.id)
         .eq("status", "completed");
 
@@ -58,6 +59,8 @@ const CreatorDashboard = () => {
         .eq("creator_id", user?.id);
 
       const totalEarnings = payments?.reduce((sum, p) => sum + parseFloat(String(p.creator_earnings)), 0) || 0;
+      const tipEarnings = payments?.filter(p => p.payment_type === "one_time")
+        .reduce((sum, p) => sum + parseFloat(String(p.creator_earnings)), 0) || 0;
       const completedPayouts = payouts?.filter(p => p.status === "completed")
         .reduce((sum, p) => sum + parseFloat(String(p.amount)), 0) || 0;
       const pendingPayouts = payouts?.filter(p => p.status === "pending")
@@ -65,6 +68,7 @@ const CreatorDashboard = () => {
 
       return {
         total: totalEarnings,
+        tips: tipEarnings,
         paid: completedPayouts,
         pending: pendingPayouts,
         available: totalEarnings - completedPayouts - pendingPayouts,
@@ -118,7 +122,7 @@ const CreatorDashboard = () => {
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Available Balance</CardTitle>
@@ -128,6 +132,21 @@ const CreatorDashboard = () => {
               <div className="text-2xl font-bold">${earnings?.available?.toFixed(2) || "0.00"}</div>
               <p className="text-xs text-muted-foreground">
                 Total earned: ${earnings?.total?.toFixed(2) || "0.00"}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Tips Received</CardTitle>
+              <DollarSign className="h-4 w-4 text-green-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-500">
+                ${earnings?.tips?.toFixed(2) || "0.00"}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                From supporters
               </p>
             </CardContent>
           </Card>

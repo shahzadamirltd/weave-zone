@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Upload } from "lucide-react";
+import { ArrowLeft, Upload, LogOut } from "lucide-react";
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -115,6 +115,12 @@ export default function Profile() {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     updateProfileMutation.mutate(formData);
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/auth");
+    toast({ title: "Logged out successfully" });
   };
 
   if (!profile) {
@@ -233,6 +239,22 @@ export default function Profile() {
                 <Button onClick={() => setIsEditing(true)}>Edit Profile</Button>
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Account Actions</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Button 
+              variant="destructive" 
+              className="w-full gap-2"
+              onClick={handleLogout}
+            >
+              <LogOut className="h-4 w-4" />
+              Logout
+            </Button>
           </CardContent>
         </Card>
       </div>

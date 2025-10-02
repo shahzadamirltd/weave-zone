@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { TipButton } from "@/components/TipButton";
 import { 
   ArrowLeft, Users, Lock, Globe, MessageSquare, Heart, 
   Sparkles, Send, Image as ImageIcon, Video, Share2, Reply
@@ -451,6 +452,13 @@ export default function Community() {
               <Users className="h-4 w-4" />
               <span>{members?.length || 0} members</span>
             </div>
+            {community.owner_id !== profile?.id && (
+              <TipButton 
+                creatorId={community.owner_id} 
+                creatorName={community.profiles?.username || "Creator"}
+                communityId={community.id}
+              />
+            )}
             <Button variant="outline" size="sm" onClick={handleShare} className="gap-2">
               <Share2 className="h-4 w-4" />
               Share

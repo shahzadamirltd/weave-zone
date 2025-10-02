@@ -60,12 +60,60 @@ serve(async (req) => {
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     let customerId = customers.data.length > 0 ? customers.data[0].id : undefined;
 
+    // Auto-create Stripe product and price if missing (like Shopify)
+    let stripePriceId = community.stripe_price_id;
+    
+    if (!stripePriceId && community.price_amount) {
+      console.log("Auto-creating Stripe product for community:", community.name);
+      
+      // Create Stripe product
+      const product = await stripe.products.create({
+        name: community.name,
+        description: community.description || undefined,
+      });
+
+      console.log("Created Stripe product:", product.id);
+
+      // Create Stripe price
+      const priceParams: any = {
+        product: product.id,
+        unit_amount: Math.round(community.price_amount * 100), // Convert to cents
+        currency: "usd",
+      };
+
+      if (community.pricing_type === "recurring_monthly") {
+        priceParams.recurring = { interval: "month" };
+      }
+
+      const price = await stripe.prices.create(priceParams);
+      console.log("Created Stripe price:", price.id);
+
+      // Update community with Stripe IDs
+      const { error: updateError } = await supabaseClient
+        .from("communities")
+        .update({
+          stripe_product_id: product.id,
+          stripe_price_id: price.id,
+        })
+        .eq("id", community_id);
+
+      if (updateError) {
+        console.error("Failed to update community with Stripe IDs:", updateError);
+      }
+
+      stripePriceId = price.id;
+    }
+
+    if (!stripePriceId) {
+      throw new Error("Unable to create or find Stripe price for this community");
+    }
+
     const sessionParams: any = {
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
       line_items: [
         {
-          price: community.stripe_price_id,
+          price: stripePriceId,
           quantity: 1,
         },
       ],

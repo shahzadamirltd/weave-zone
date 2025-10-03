@@ -23,6 +23,7 @@ export const PayoutRequestDialog = ({ availableBalance, communities }: PayoutReq
     amount: "",
     payment_method: "",
     payment_details: "",
+    bank_details: "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -46,6 +47,7 @@ export const PayoutRequestDialog = ({ availableBalance, communities }: PayoutReq
           amount,
           payment_method: formData.payment_method,
           payment_details: JSON.parse(formData.payment_details || "{}"),
+          bank_details: formData.bank_details,
         },
       });
 
@@ -57,7 +59,7 @@ export const PayoutRequestDialog = ({ availableBalance, communities }: PayoutReq
       });
       
       setOpen(false);
-      setFormData({ community_id: "", amount: "", payment_method: "", payment_details: "" });
+      setFormData({ community_id: "", amount: "", payment_method: "", payment_details: "", bank_details: "" });
     } catch (error: any) {
       toast({
         title: "Request failed",
@@ -135,16 +137,31 @@ export const PayoutRequestDialog = ({ availableBalance, communities }: PayoutReq
           </div>
 
           <div>
-            <Label htmlFor="details">Payment Details (JSON)</Label>
+            <Label htmlFor="bank_details">Bank Details (Receiving Account)</Label>
             <Textarea
-              id="details"
-              placeholder='{"account": "123456", "bank": "Example Bank"}'
-              value={formData.payment_details}
-              onChange={(e) => setFormData({ ...formData, payment_details: e.target.value })}
+              id="bank_details"
+              placeholder="Enter your bank details (receiving account) to request a payout."
+              value={formData.bank_details}
+              onChange={(e) => setFormData({ ...formData, bank_details: e.target.value })}
               required
+              rows={4}
             />
             <p className="text-xs text-muted-foreground mt-1">
-              Enter your payment details in JSON format
+              Enter your complete bank account information for receiving the payout.
+            </p>
+          </div>
+
+          <div>
+            <Label htmlFor="details">Additional Payment Details (JSON)</Label>
+            <Textarea
+              id="details"
+              placeholder='{"routing": "123456789", "swift": "ABCDUS33"}'
+              value={formData.payment_details}
+              onChange={(e) => setFormData({ ...formData, payment_details: e.target.value })}
+              rows={3}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Optional: Enter additional payment details in JSON format
             </p>
           </div>
 

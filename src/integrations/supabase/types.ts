@@ -446,6 +446,7 @@ export type Database = {
       payouts: {
         Row: {
           amount: number
+          bank_details: string | null
           community_id: string
           created_at: string
           creator_id: string
@@ -461,6 +462,7 @@ export type Database = {
         }
         Insert: {
           amount: number
+          bank_details?: string | null
           community_id: string
           created_at?: string
           creator_id: string
@@ -476,6 +478,7 @@ export type Database = {
         }
         Update: {
           amount?: number
+          bank_details?: string | null
           community_id?: string
           created_at?: string
           creator_id?: string
@@ -501,6 +504,7 @@ export type Database = {
       }
       platform_config: {
         Row: {
+          admin_email: string | null
           created_at: string
           grace_period_days: number
           id: string
@@ -508,6 +512,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          admin_email?: string | null
           created_at?: string
           grace_period_days?: number
           id?: string
@@ -515,6 +520,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          admin_email?: string | null
           created_at?: string
           grace_period_days?: number
           id?: string

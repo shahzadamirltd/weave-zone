@@ -60,16 +60,30 @@ export default function Dashboard() {
   });
 
   const { data: allCommunities } = useQuery({
-    queryKey: ["all-communities"],
+    queryKey: ["all-communities", profile?.id],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data: communities } = await supabase
         .from("communities")
         .select("*, memberships(count)")
         .eq("is_private", false)
         .order("created_at", { ascending: false });
 
-      return data || [];
+      if (!profile) return communities || [];
+
+      // Check membership status for each community
+      const { data: userMemberships } = await supabase
+        .from("memberships")
+        .select("community_id")
+        .eq("user_id", profile.id);
+
+      const membershipSet = new Set(userMemberships?.map(m => m.community_id) || []);
+      
+      return (communities || []).map(community => ({
+        ...community,
+        isJoined: membershipSet.has(community.id)
+      }));
     },
+    enabled: !!profile,
   });
 
   const CommunityCard = ({ community, showJoinButton = false }: any) => (
@@ -95,13 +109,14 @@ export default function Dashboard() {
           {showJoinButton && (
             <Button 
               size="sm" 
-              variant="outline"
+              variant={community.isJoined ? "secondary" : "outline"}
               className="h-8 px-4 text-xs"
+              disabled={community.isJoined}
               onClick={(e) => {
                 e.stopPropagation();
               }}
             >
-              Join
+              {community.isJoined ? "Joined" : "Join"}
             </Button>
           )}
         </div>

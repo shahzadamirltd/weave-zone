@@ -31,21 +31,19 @@ export function NotificationBell() {
     queryFn: async () => {
       if (!profile) return [];
       
-      // Get recent payments where user is the creator
-      const { data: payments } = await supabase
-        .from("payments")
-        .select("*, communities!inner(owner_id, name)")
-        .eq("communities.owner_id", profile.id)
-        .eq("status", "completed")
+      const { data } = await supabase
+        .from("notifications")
+        .select("*")
+        .eq("user_id", profile.id)
         .order("created_at", { ascending: false })
-        .limit(10);
+        .limit(20);
 
-      return payments || [];
+      return data || [];
     },
     enabled: !!profile,
   });
 
-  const unreadCount = notifications?.length || 0;
+  const unreadCount = notifications?.filter((n: any) => !n.is_read).length || 0;
 
   const requestNotificationPermission = async () => {
     if ("Notification" in window) {
@@ -63,31 +61,31 @@ export function NotificationBell() {
     }
   }, []);
 
-  // Listen for new payments
+  // Listen for new notifications
   useEffect(() => {
     if (!profile) return;
 
     const channel = supabase
-      .channel("payments-notifications")
+      .channel("notifications-realtime")
       .on(
         "postgres_changes",
         {
           event: "INSERT",
           schema: "public",
-          table: "payments",
-          filter: `status=eq.completed`,
+          table: "notifications",
+          filter: `user_id=eq.${profile.id}`,
         },
         (payload: any) => {
           refetch();
           if (hasPermission) {
-            new Notification("New Payment Received!", {
-              body: `You received a payment of $${payload.new.creator_earnings}`,
+            new Notification(payload.new.title, {
+              body: payload.new.message,
               icon: "/favicon.ico",
             });
           }
           toast({
-            title: "New Payment!",
-            description: `You received $${payload.new.creator_earnings}`,
+            title: payload.new.title,
+            description: payload.new.message,
           });
         }
       )
@@ -97,6 +95,14 @@ export function NotificationBell() {
       supabase.removeChannel(channel);
     };
   }, [profile, hasPermission, refetch, toast]);
+
+  const markAsRead = async (notificationId: string) => {
+    await supabase
+      .from("notifications")
+      .update({ is_read: true })
+      .eq("id", notificationId);
+    refetch();
+  };
 
   return (
     <Popover>
@@ -125,16 +131,22 @@ export function NotificationBell() {
           </div>
           <div className="space-y-2">
             {notifications && notifications.length > 0 ? (
-              notifications.map((payment: any) => (
-                <div key={payment.id} className="p-2 border rounded-lg text-sm">
+              notifications.map((notification: any) => (
+                <div 
+                  key={notification.id} 
+                  className={`p-2 border rounded-lg text-sm cursor-pointer transition-colors ${
+                    !notification.is_read ? 'bg-primary/5 border-primary/20' : ''
+                  }`}
+                  onClick={() => markAsRead(notification.id)}
+                >
                   <p className="font-medium">
-                    Payment received: ${payment.creator_earnings}
+                    {notification.title}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    From {payment.communities?.name}
+                    {notification.message}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {formatDistanceToNow(new Date(payment.created_at), { addSuffix: true })}
+                    {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
                   </p>
                 </div>
               ))

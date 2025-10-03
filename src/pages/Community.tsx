@@ -212,6 +212,11 @@ export default function Community() {
     mutationFn: async () => {
       if (!profile) throw new Error("Not authenticated");
       
+      // Require either content or media
+      if (!postContent.trim() && mediaFiles.length === 0) {
+        throw new Error("Please add some content or media");
+      }
+      
       let mediaUrls: string[] = [];
       if (mediaFiles.length > 0) {
         setUploading(true);
@@ -221,7 +226,7 @@ export default function Community() {
       const { error } = await supabase.from("posts").insert({
         community_id: id,
         author_id: profile.id,
-        content: postContent,
+        content: postContent || "",
         media_urls: mediaUrls.length > 0 ? mediaUrls : null,
       });
       if (error) throw error;
@@ -233,18 +238,22 @@ export default function Community() {
       queryClient.invalidateQueries({ queryKey: ["posts", id] });
       toast({ title: "Success!", description: "Post created" });
     },
-    onError: () => {
+    onError: (error: any) => {
       setUploading(false);
+      toast({ title: "Error", description: error.message || "Failed to create post", variant: "destructive" });
     },
   });
 
   const createCommentMutation = useMutation({
     mutationFn: async ({ postId, parentId }: { postId: string; parentId?: string }) => {
       if (!profile) throw new Error("Not authenticated");
+      const content = commentContent[postId] || "";
+      if (!content.trim()) throw new Error("Comment cannot be empty");
+      
       const { error } = await supabase.from("comments").insert({
         post_id: postId,
         author_id: profile.id,
-        content: commentContent[postId] || "",
+        content: content,
         parent_id: parentId || null,
       });
       if (error) throw error;
@@ -255,6 +264,9 @@ export default function Community() {
       setReplyingTo((prev) => ({ ...prev, [postId]: null }));
       queryClient.invalidateQueries({ queryKey: ["comments", id] });
       toast({ title: "Success!", description: "Comment added" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to add comment", variant: "destructive" });
     },
   });
 
@@ -273,6 +285,7 @@ export default function Community() {
       if (existing) {
         const { error } = await supabase.from("reactions").delete().eq("id", existing.id);
         if (error) throw error;
+        return { action: 'removed' };
       } else {
         const { error } = await supabase.from("reactions").insert({
           post_id: postId,
@@ -280,34 +293,14 @@ export default function Community() {
           type: "like",
         });
         if (error) throw error;
+        return { action: 'added' };
       }
     },
-    onMutate: async (postId) => {
-      await queryClient.cancelQueries({ queryKey: ["posts", id] });
-      const previousPosts = queryClient.getQueryData(["posts", id]);
-      
-      queryClient.setQueryData(["posts", id], (old: any) => {
-        return old?.map((post: any) => {
-          if (post.id === postId) {
-            const hasReaction = post.reactions?.some((r: any) => r.user_id === profile?.id);
-            return {
-              ...post,
-              reactions: hasReaction
-                ? post.reactions.filter((r: any) => r.user_id !== profile?.id)
-                : [...(post.reactions || []), { user_id: profile?.id, type: "like" }]
-            };
-          }
-          return post;
-        });
-      });
-      
-      return { previousPosts };
-    },
-    onError: (err, postId, context: any) => {
-      queryClient.setQueryData(["posts", id], context.previousPosts);
-    },
-    onSettled: () => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["posts", id] });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to update reaction", variant: "destructive" });
     },
   });
 
@@ -515,7 +508,7 @@ export default function Community() {
                 </div>
                 <Button
                   onClick={() => createPostMutation.mutate()}
-                  disabled={!postContent.trim() || createPostMutation.isPending || uploading}
+                  disabled={(!postContent.trim() && mediaFiles.length === 0) || createPostMutation.isPending || uploading}
                   size="sm"
                   className="gap-2"
                 >

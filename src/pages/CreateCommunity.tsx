@@ -28,10 +28,10 @@ export default function CreateCommunity() {
     const description = formData.get("description") as string;
 
     try {
-      // Get authenticated user
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      // Get authenticated user and session
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
-      if (userError || !user) {
+      if (sessionError || !session) {
         toast({
           title: "Authentication Required",
           description: "Please sign in to create a community",
@@ -40,6 +40,8 @@ export default function CreateCommunity() {
         navigate("/auth");
         return;
       }
+
+      const user = session.user;
 
       // Validate minimum price
       if (pricingType !== "free" && parseFloat(price) < 20) {
@@ -87,7 +89,13 @@ export default function CreateCommunity() {
 
       if (error) {
         console.error("Database error:", error);
-        throw error;
+        toast({
+          title: "Error",
+          description: error.message || "Failed to create community. Please make sure you're logged in.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
       }
 
       toast({

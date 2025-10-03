@@ -14,7 +14,7 @@ import CommunityPricing from "./pages/CommunityPricing";
 import CreatorDashboard from "./pages/CreatorDashboard";
 import StripeSetup from "./pages/StripeSetup";
 import Settings from "./pages/Settings";
-import LiveStream from "./pages/LiveStream";
+
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -111,14 +111,6 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <Settings />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/live"
-            element={
-              <ProtectedRoute>
-                <LiveStream />
               </ProtectedRoute>
             }
           />

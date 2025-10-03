@@ -2,7 +2,7 @@ import { ReactNode } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Home, Plus, Settings, Video } from "lucide-react";
+import { Home, Plus, Settings } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
@@ -58,25 +58,12 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
             variant="ghost"
             size="sm"
             onClick={() => navigate("/dashboard")}
-            className={`flex flex-col items-center gap-1 h-auto py-2 px-3 ${
+            className={`flex flex-col items-center gap-1 h-auto py-2 px-4 ${
               isActive("/dashboard") ? "text-foreground" : "text-muted-foreground"
             }`}
           >
             <Home className={`h-5 w-5 ${isActive("/dashboard") ? "fill-current" : ""}`} />
             <span className="text-xs">Home</span>
-          </Button>
-
-          {/* Live */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate("/live")}
-            className={`flex flex-col items-center gap-1 h-auto py-2 px-3 ${
-              isActive("/live") ? "text-foreground" : "text-muted-foreground"
-            }`}
-          >
-            <Video className={`h-5 w-5 ${isActive("/live") ? "fill-current" : ""}`} />
-            <span className="text-xs">Live</span>
           </Button>
 
           {/* Create - Centered with special styling */}
@@ -92,7 +79,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
             variant="ghost"
             size="sm"
             onClick={() => navigate("/profile")}
-            className={`flex flex-col items-center gap-1 h-auto py-2 px-3 ${
+            className={`flex flex-col items-center gap-1 h-auto py-2 px-4 ${
               isActive("/profile") ? "text-foreground" : "text-muted-foreground"
             }`}
           >
@@ -110,7 +97,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
             variant="ghost"
             size="sm"
             onClick={() => navigate("/settings")}
-            className={`flex flex-col items-center gap-1 h-auto py-2 px-3 ${
+            className={`flex flex-col items-center gap-1 h-auto py-2 px-4 ${
               isActive("/settings") ? "text-foreground" : "text-muted-foreground"
             }`}
           >

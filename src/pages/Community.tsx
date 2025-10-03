@@ -11,9 +11,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { TipButton } from "@/components/TipButton";
+import { CommunityLiveStream } from "@/components/community/CommunityLiveStream";
 import { 
   ArrowLeft, Users, Lock, Globe, MessageSquare, Heart, 
-  Sparkles, Send, Image as ImageIcon, Video, Share2, Reply
+  Sparkles, Send, Image as ImageIcon, Video, Share2, Reply, RadioIcon
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
@@ -27,6 +28,7 @@ export default function Community() {
   const [replyingTo, setReplyingTo] = useState<{ [key: string]: string | null }>({});
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [showLiveStream, setShowLiveStream] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: profile } = useQuery({
@@ -452,6 +454,12 @@ export default function Community() {
               <Users className="h-4 w-4" />
               <span>{members?.length || 0} members</span>
             </div>
+            {community.owner_id === profile?.id && (
+              <Button onClick={() => setShowLiveStream(true)} className="gap-2">
+                <RadioIcon className="h-4 w-4" />
+                Go Live
+              </Button>
+            )}
             {community.owner_id !== profile?.id && (
               <TipButton 
                 creatorId={community.owner_id} 
@@ -702,6 +710,14 @@ export default function Community() {
           )}
         </div>
       </div>
+
+      {showLiveStream && (
+        <CommunityLiveStream 
+          communityId={id!}
+          isOwner={community.owner_id === profile?.id}
+          onClose={() => setShowLiveStream(false)}
+        />
+      )}
     </AppLayout>
   );
 }

@@ -163,6 +163,50 @@ export type Database = {
           },
         ]
       }
+      content_analytics: {
+        Row: {
+          community_id: string
+          content_id: string
+          content_type: string
+          created_at: string
+          date: string
+          id: string
+          likes_count: number | null
+          updated_at: string
+          views_count: number | null
+        }
+        Insert: {
+          community_id: string
+          content_id: string
+          content_type: string
+          created_at?: string
+          date?: string
+          id?: string
+          likes_count?: number | null
+          updated_at?: string
+          views_count?: number | null
+        }
+        Update: {
+          community_id?: string
+          content_id?: string
+          content_type?: string
+          created_at?: string
+          date?: string
+          id?: string
+          likes_count?: number | null
+          updated_at?: string
+          views_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_analytics_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       coupon_codes: {
         Row: {
           active: boolean
@@ -212,6 +256,94 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "coupon_codes_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gifts: {
+        Row: {
+          amount: number
+          created_at: string
+          creator_earnings: number
+          id: string
+          live_stream_id: string
+          platform_fee: number
+          sender_id: string
+          stripe_payment_intent_id: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          creator_earnings: number
+          id?: string
+          live_stream_id: string
+          platform_fee: number
+          sender_id: string
+          stripe_payment_intent_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          creator_earnings?: number
+          id?: string
+          live_stream_id?: string
+          platform_fee?: number
+          sender_id?: string
+          stripe_payment_intent_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gifts_live_stream_id_fkey"
+            columns: ["live_stream_id"]
+            isOneToOne: false
+            referencedRelation: "live_streams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      live_streams: {
+        Row: {
+          community_id: string
+          created_at: string
+          creator_id: string
+          ended_at: string | null
+          id: string
+          started_at: string
+          status: string
+          total_gifts_received: number | null
+          updated_at: string
+          viewer_count: number | null
+        }
+        Insert: {
+          community_id: string
+          created_at?: string
+          creator_id: string
+          ended_at?: string | null
+          id?: string
+          started_at?: string
+          status?: string
+          total_gifts_received?: number | null
+          updated_at?: string
+          viewer_count?: number | null
+        }
+        Update: {
+          community_id?: string
+          created_at?: string
+          creator_id?: string
+          ended_at?: string | null
+          id?: string
+          started_at?: string
+          status?: string
+          total_gifts_received?: number | null
+          updated_at?: string
+          viewer_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_streams_community_id_fkey"
             columns: ["community_id"]
             isOneToOne: false
             referencedRelation: "communities"

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, DollarSign, Users, TrendingUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { PayoutRequestDialog } from "@/components/creator/PayoutRequestDialog";
+import { AnalyticsDashboard } from "@/components/creator/AnalyticsDashboard";
 
 const CreatorDashboard = () => {
   const navigate = useNavigate();
@@ -194,6 +195,8 @@ const CreatorDashboard = () => {
             </p>
           </CardContent>
         </Card>
+
+        <AnalyticsDashboard communityIds={communities?.map(c => c.id) || []} />
 
         <Card>
           <CardHeader>

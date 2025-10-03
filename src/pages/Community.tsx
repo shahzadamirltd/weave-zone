@@ -96,7 +96,7 @@ export default function Community() {
         .eq("community_id", id);
       return data || [];
     },
-    enabled: !!membership,
+    enabled: !!membership || !!hasAccess,
   });
 
   const { data: posts } = useQuery({
@@ -113,7 +113,7 @@ export default function Community() {
         .order("created_at", { ascending: false });
       return data || [];
     },
-    enabled: !!membership,
+    enabled: !!membership || !!hasAccess,
   });
 
   const { data: commentsData } = useQuery({
@@ -137,7 +137,7 @@ export default function Community() {
 
   // Set up realtime subscription for posts
   useEffect(() => {
-    if (!membership) return;
+    if (!membership && !hasAccess) return;
 
     const channel = supabase
       .channel(`posts-${id}`)
@@ -158,7 +158,7 @@ export default function Community() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [id, membership, queryClient]);
+  }, [id, membership, hasAccess, queryClient]);
 
   const joinMutation = useMutation({
     mutationFn: async () => {

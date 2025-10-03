@@ -104,27 +104,34 @@ export const CommunityLiveStream = ({ communityId, isOwner, onClose }: Community
     mutationFn: async () => {
       if (!profile) throw new Error("Not authenticated");
 
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 1280, height: 720 },
-        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-      });
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { width: 1280, height: 720 },
+          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+        });
 
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+
+        const { data, error } = await supabase
+          .from("live_streams")
+          .insert({
+            community_id: communityId,
+            creator_id: profile.id,
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        return data;
+      } catch (err: any) {
+        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+          throw new Error("Camera/microphone permission denied. Please allow access and try again.");
+        }
+        throw err;
       }
-
-      const { data, error } = await supabase
-        .from("live_streams")
-        .insert({
-          community_id: communityId,
-          creator_id: profile.id,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
     },
     onSuccess: (data) => {
       setIsLive(true);

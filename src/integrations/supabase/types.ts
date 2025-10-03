@@ -766,6 +766,10 @@ export type Database = {
         Args: { _community_id: string; _user_id: string }
         Returns: boolean
       }
+      user_is_community_member: {
+        Args: { _community_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       pricing_type: "free" | "one_time" | "lifetime" | "recurring_monthly"

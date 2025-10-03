@@ -296,11 +296,34 @@ export default function Community() {
         return { action: 'added' };
       }
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["posts", id] });
+    onMutate: async (postId: string) => {
+      await queryClient.cancelQueries({ queryKey: ["posts", id] });
+      const previousPosts = queryClient.getQueryData(["posts", id]);
+      
+      queryClient.setQueryData(["posts", id], (old: any) => {
+        if (!old) return old;
+        return old.map((post: any) => {
+          if (post.id !== postId) return post;
+          
+          const hasLiked = post.reactions?.some((r: any) => r.user_id === profile?.id);
+          const newReactions = hasLiked
+            ? post.reactions.filter((r: any) => r.user_id !== profile?.id)
+            : [...(post.reactions || []), { user_id: profile?.id, type: "like" }];
+          
+          return { ...post, reactions: newReactions };
+        });
+      });
+      
+      return { previousPosts };
     },
-    onError: (error: any) => {
+    onError: (error: any, postId, context) => {
+      if (context?.previousPosts) {
+        queryClient.setQueryData(["posts", id], context.previousPosts);
+      }
       toast({ title: "Error", description: error.message || "Failed to update reaction", variant: "destructive" });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["posts", id] });
     },
   });
 
@@ -328,7 +351,32 @@ export default function Community() {
         if (error) throw error;
       }
     },
-    onSuccess: () => {
+    onMutate: async (commentId: string) => {
+      await queryClient.cancelQueries({ queryKey: ["comments", id] });
+      const previousComments = queryClient.getQueryData(["comments", id]);
+      
+      queryClient.setQueryData(["comments", id], (old: any) => {
+        if (!old) return old;
+        return old.map((comment: any) => {
+          if (comment.id !== commentId) return comment;
+          
+          const hasLiked = comment.comment_reactions?.some((r: any) => r.user_id === profile?.id);
+          const newReactions = hasLiked
+            ? comment.comment_reactions.filter((r: any) => r.user_id !== profile?.id)
+            : [...(comment.comment_reactions || []), { user_id: profile?.id, type: "like" }];
+          
+          return { ...comment, comment_reactions: newReactions };
+        });
+      });
+      
+      return { previousComments };
+    },
+    onError: (error: any, commentId, context) => {
+      if (context?.previousComments) {
+        queryClient.setQueryData(["comments", id], context.previousComments);
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["comments", id] });
     },
   });

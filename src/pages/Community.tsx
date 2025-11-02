@@ -465,207 +465,108 @@ export default function Community() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Custom Header for Community */}
-      <header className="fixed top-0 z-50 w-full border-b bg-background">
-        <div className="flex h-14 items-center justify-between px-4">
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* Custom Header */}
+      <header className="border-b bg-background px-4 py-3">
+        <div className="flex items-center gap-3">
           <Button 
             variant="ghost" 
             size="icon"
             onClick={() => navigate("/dashboard")}
+            className="h-8 w-8"
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
           
-          <div className="flex items-center gap-2">
-            <Avatar className="h-8 w-8">
-              <AvatarImage src={community.profiles?.avatar_url} />
-              <AvatarFallback>
-                {community.name?.[0]?.toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <span className="font-semibold">{community.name}</span>
+          <Avatar className="h-10 w-10">
+            <AvatarImage src={community.profiles?.avatar_url} />
+            <AvatarFallback>
+              {community.name?.[0]?.toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+          
+          <div className="flex-1">
+            <h1 className="font-semibold text-base">{community.name}</h1>
+            <p className="text-xs text-muted-foreground">{members?.length || 0} members</p>
           </div>
           
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" className="h-8 w-8">
             <MoreVertical className="h-5 w-5" />
           </Button>
         </div>
       </header>
 
-      <div className="pt-14 max-w-4xl mx-auto space-y-6 animate-fade-in">
-        {/* Community Info Banner */}
-        <div className="px-4 py-3 border-b space-y-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              {community.is_private ? (
-                <Badge variant="secondary" className="gap-1">
-                  <Lock className="h-3 w-3" />
-                  Private
-                </Badge>
-              ) : (
-                <Badge variant="secondary" className="gap-1">
-                  <Globe className="h-3 w-3" />
-                  Public
-                </Badge>
-              )}
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Users className="h-4 w-4" />
-                <span>{members?.length || 0} members</span>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              {community.owner_id === profile?.id && (
-                <Button onClick={() => setShowLiveStream(true)} size="sm" className="gap-2">
-                  <RadioIcon className="h-4 w-4" />
-                  Go Live
-                </Button>
-              )}
-              {community.owner_id !== profile?.id && (
-                <TipButton 
-                  creatorId={community.owner_id} 
-                  creatorName={community.profiles?.username || "Creator"}
-                  communityId={community.id}
-                />
-              )}
-              <Button variant="outline" size="sm" onClick={handleShare} className="gap-2">
-                <Share2 className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-          <p className="text-sm text-muted-foreground">{community.description}</p>
-        </div>
-
-        {/* Create Post */}
-        <div className="px-4">
-          <Card>
-          <CardContent className="pt-6">
-            <div className="space-y-4">
-              <Textarea
-                placeholder="Share something with the community..."
-                value={postContent}
-                onChange={(e) => setPostContent(e.target.value)}
-                rows={3}
-              />
-              {mediaFiles.length > 0 && (
-                <div className="flex gap-2 flex-wrap">
-                  {mediaFiles.map((file, idx) => (
-                    <Badge key={idx} variant="secondary">{file.name}</Badge>
-                  ))}
-                </div>
-              )}
-              <div className="flex items-center justify-between">
-                <div className="flex gap-2">
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*,video/*"
-                    multiple
-                    className="hidden"
-                    onChange={(e) => {
-                      if (e.target.files) {
-                        setMediaFiles(Array.from(e.target.files));
-                      }
-                    }}
-                  />
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    <ImageIcon className="h-4 w-4" />
-                  </Button>
-                </div>
-                <Button
-                  onClick={() => createPostMutation.mutate()}
-                  disabled={(!postContent.trim() && mediaFiles.length === 0) || createPostMutation.isPending || uploading}
-                  size="sm"
-                  className="gap-2"
-                >
-                  <Send className="h-4 w-4" />
-                  {uploading ? "Uploading..." : "Post"}
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-          </Card>
-        </div>
-
-        {/* Posts Feed */}
-        <div className="px-4 space-y-4 pb-6">
-          {posts && posts.length > 0 ? (
-            posts.map((post: any) => (
-              <Card key={post.id} className="overflow-hidden">
-                <CardHeader>
-                  <div className="flex items-start gap-3">
-                    <Avatar>
-                      <AvatarImage src={post.profiles?.avatar_url} />
-                      <AvatarFallback>
-                        {post.profiles?.username?.[0]?.toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold">{post.profiles?.username}</span>
-                        <span className="text-sm text-muted-foreground">
-                          {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
-                        </span>
-                      </div>
-                      <p className="text-sm whitespace-pre-wrap">{post.content}</p>
-                      {post.media_urls && post.media_urls.length > 0 && (
-                        <div className="grid grid-cols-2 gap-2 mt-3">
-                          {post.media_urls.map((url: string, idx: number) => (
-                            <div key={idx} className="rounded-lg overflow-hidden">
-                              {url.match(/\.(mp4|webm|ogg)$/i) ? (
-                                <video src={url} controls className="w-full" />
-                              ) : (
-                                <img src={url} alt="Post media" className="w-full object-cover" />
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+      {/* Main Content - Posts Feed */}
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 animate-fade-in">
+        {posts && posts.length > 0 ? (
+          posts.map((post: any) => (
+            <div key={post.id} className="space-y-3">
+              <div className="flex items-start gap-3">
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={post.profiles?.avatar_url} />
+                  <AvatarFallback>
+                    {post.profiles?.username?.[0]?.toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-sm">{post.profiles?.username}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
+                    </span>
                   </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center gap-4">
+                  <p className="text-sm whitespace-pre-wrap">{post.content}</p>
+                  {post.media_urls && post.media_urls.length > 0 && (
+                    <div className="grid grid-cols-2 gap-2">
+                      {post.media_urls.map((url: string, idx: number) => (
+                        <div key={idx} className="rounded-lg overflow-hidden">
+                          {url.match(/\.(mp4|webm|ogg)$/i) ? (
+                            <video src={url} controls className="w-full" />
+                          ) : (
+                            <img src={url} alt="Post media" className="w-full object-cover" />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  <div className="flex items-center gap-4 py-2">
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="gap-2"
+                      className="gap-1 h-8 px-2"
                       onClick={() => toggleReactionMutation.mutate(post.id)}
                     >
                       <Heart className={`h-4 w-4 ${post.reactions?.some((r: any) => r.user_id === profile?.id) ? 'fill-red-500 text-red-500' : ''}`} />
-                      {post.reactions?.length || 0}
+                      <span className="text-xs">{post.reactions?.length || 0}</span>
                     </Button>
-                    <Button variant="ghost" size="sm" className="gap-2">
+                    <Button variant="ghost" size="sm" className="gap-1 h-8 px-2">
                       <MessageSquare className="h-4 w-4" />
-                      {commentsData?.filter((c: any) => c.post_id === post.id).length || 0}
+                      <span className="text-xs">{commentsData?.filter((c: any) => c.post_id === post.id).length || 0}</span>
                     </Button>
                   </div>
 
                   {/* Comments Section */}
-                  <div className="space-y-3 border-t pt-4">
+                  <div className="space-y-3 pl-2">
                     {commentsData?.filter((c: any) => c.post_id === post.id && !c.parent_id).map((comment: any) => (
-                      <div key={comment.id} className="space-y-2">
+                      <div key={comment.id} className="space-y-1">
                         <div className="flex gap-2">
-                          <Avatar className="h-8 w-8">
+                          <Avatar className="h-7 w-7">
                             <AvatarImage src={comment.profiles?.avatar_url} />
                             <AvatarFallback>
                               {comment.profiles?.username?.[0]?.toUpperCase()}
                             </AvatarFallback>
                           </Avatar>
                           <div className="flex-1 space-y-1">
-                            <div className="bg-muted rounded-lg px-3 py-2">
-                              <div className="font-semibold text-sm">{comment.profiles?.username}</div>
-                              <p className="text-sm">{comment.content}</p>
+                            <div className="bg-muted/50 rounded-2xl px-3 py-2">
+                              <div className="font-semibold text-xs">{comment.profiles?.username}</div>
+                              <p className="text-xs">{comment.content}</p>
                             </div>
                             <div className="flex items-center gap-3 px-2">
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="h-auto p-0 text-xs"
+                                className="h-auto p-0 text-xs hover:bg-transparent"
                                 onClick={() => toggleCommentReactionMutation.mutate(comment.id)}
                               >
                                 <Heart className={`h-3 w-3 mr-1 ${comment.comment_reactions?.some((r: any) => r.user_id === profile?.id) ? 'fill-red-500 text-red-500' : ''}`} />
@@ -674,10 +575,9 @@ export default function Community() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="h-auto p-0 text-xs"
+                                className="h-auto p-0 text-xs hover:bg-transparent"
                                 onClick={() => setReplyingTo((prev) => ({ ...prev, [post.id]: comment.id }))}
                               >
-                                <Reply className="h-3 w-3 mr-1" />
                                 Reply
                               </Button>
                               <span className="text-xs text-muted-foreground">
@@ -689,23 +589,23 @@ export default function Community() {
                         
                         {/* Replies */}
                         {commentsData?.filter((r: any) => r.parent_id === comment.id).map((reply: any) => (
-                          <div key={reply.id} className="ml-10 flex gap-2">
-                            <Avatar className="h-7 w-7">
+                          <div key={reply.id} className="ml-9 flex gap-2">
+                            <Avatar className="h-6 w-6">
                               <AvatarImage src={reply.profiles?.avatar_url} />
-                              <AvatarFallback>
+                              <AvatarFallback className="text-xs">
                                 {reply.profiles?.username?.[0]?.toUpperCase()}
                               </AvatarFallback>
                             </Avatar>
                             <div className="flex-1 space-y-1">
-                              <div className="bg-muted rounded-lg px-3 py-2">
-                                <div className="font-semibold text-sm">{reply.profiles?.username}</div>
-                                <p className="text-sm">{reply.content}</p>
+                              <div className="bg-muted/50 rounded-2xl px-3 py-2">
+                                <div className="font-semibold text-xs">{reply.profiles?.username}</div>
+                                <p className="text-xs">{reply.content}</p>
                               </div>
-                              <div className="flex items-center gap-3 px-2">
+                              <div className="flex items-center gap-2 px-2">
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="h-auto p-0 text-xs"
+                                  className="h-auto p-0 text-xs hover:bg-transparent"
                                   onClick={() => toggleCommentReactionMutation.mutate(reply.id)}
                                 >
                                   <Heart className={`h-3 w-3 mr-1 ${reply.comment_reactions?.some((r: any) => r.user_id === profile?.id) ? 'fill-red-500 text-red-500' : ''}`} />
@@ -720,59 +620,75 @@ export default function Community() {
                         ))}
                       </div>
                     ))}
-                    
-                    {/* Add Comment */}
-                    <div className="flex gap-2">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={profile?.avatar_url} />
-                        <AvatarFallback>
-                          {profile?.username?.[0]?.toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 flex gap-2">
-                        <Input
-                          placeholder={replyingTo[post.id] ? "Add a reply..." : "Add a comment..."}
-                          value={commentContent[post.id] || ""}
-                          onChange={(e) =>
-                            setCommentContent((prev) => ({
-                              ...prev,
-                              [post.id]: e.target.value,
-                            }))
-                          }
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter" && !e.shiftKey) {
-                              e.preventDefault();
-                              createCommentMutation.mutate({ postId: post.id, parentId: replyingTo[post.id] || undefined });
-                            }
-                          }}
-                        />
-                        <Button
-                          size="sm"
-                          onClick={() => createCommentMutation.mutate({ postId: post.id, parentId: replyingTo[post.id] || undefined })}
-                          disabled={
-                            !commentContent[post.id]?.trim() ||
-                            createCommentMutation.isPending
-                          }
-                        >
-                          <Send className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
                   </div>
-                </CardContent>
-              </Card>
-            ))
-          ) : (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <Sparkles className="h-12 w-12 text-muted-foreground mb-4" />
-                <p className="text-center text-muted-foreground">
-                  No posts yet. Be the first to share something!
-                </p>
-              </CardContent>
-            </Card>
-          )}
+                </div>
+              </div>
+              <div className="border-t pt-2" />
+            </div>
+          ))
+        ) : (
+          <div className="flex flex-col items-center justify-center py-12">
+            <Sparkles className="h-12 w-12 text-muted-foreground mb-4" />
+            <p className="text-center text-muted-foreground">
+              No posts yet. Be the first to share something!
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Fixed Bottom Input */}
+      <div className="border-t bg-background px-4 py-3">
+        <div className="flex gap-2 items-center">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*,video/*"
+            multiple
+            className="hidden"
+            onChange={(e) => {
+              if (e.target.files) {
+                setMediaFiles(Array.from(e.target.files));
+              }
+            }}
+          />
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={() => fileInputRef.current?.click()}
+            className="h-10 w-10"
+          >
+            <ImageIcon className="h-5 w-5" />
+          </Button>
+          <Input
+            placeholder="Type a message"
+            value={postContent}
+            onChange={(e) => setPostContent(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                if (postContent.trim() || mediaFiles.length > 0) {
+                  createPostMutation.mutate();
+                }
+              }
+            }}
+            className="flex-1 rounded-full"
+          />
+          <Button
+            onClick={() => createPostMutation.mutate()}
+            disabled={(!postContent.trim() && mediaFiles.length === 0) || createPostMutation.isPending || uploading}
+            size="icon"
+            className="h-10 w-10 rounded-full"
+          >
+            <Send className="h-4 w-4" />
+          </Button>
         </div>
+        {mediaFiles.length > 0 && (
+          <div className="flex gap-2 flex-wrap mt-2">
+            {mediaFiles.map((file, idx) => (
+              <Badge key={idx} variant="secondary" className="text-xs">{file.name}</Badge>
+            ))}
+          </div>
+        )}
       </div>
 
       {showLiveStream && (

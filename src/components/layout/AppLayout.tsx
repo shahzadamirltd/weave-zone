@@ -2,7 +2,7 @@ import { ReactNode } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Home, Plus, Settings, MessageSquare } from "lucide-react";
+import { Home, Plus, Settings } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
@@ -64,19 +64,6 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
           >
             <Home className={`h-5 w-5 ${isActive("/dashboard") ? "fill-current" : ""}`} />
             <span className="text-xs">Home</span>
-          </Button>
-
-          {/* Messages */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate("/messages")}
-            className={`flex flex-col items-center gap-1 h-auto py-2 px-4 ${
-              isActive("/messages") ? "text-foreground" : "text-muted-foreground"
-            }`}
-          >
-            <MessageSquare className={`h-5 w-5 ${isActive("/messages") ? "fill-current" : ""}`} />
-            <span className="text-xs">Messages</span>
           </Button>
 
           {/* Create - Centered with special styling */}

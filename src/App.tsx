@@ -15,7 +15,6 @@ import CommunityPricing from "./pages/CommunityPricing";
 import CreatorDashboard from "./pages/CreatorDashboard";
 import StripeSetup from "./pages/StripeSetup";
 import Settings from "./pages/Settings";
-import Messages from "./pages/Messages";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -112,14 +111,6 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <Settings />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/messages"
-            element={
-              <ProtectedRoute>
-                <Messages />
               </ProtectedRoute>
             }
           />

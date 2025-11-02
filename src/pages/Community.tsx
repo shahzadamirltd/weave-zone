@@ -14,7 +14,7 @@ import { TipButton } from "@/components/TipButton";
 import { CommunityLiveStream } from "@/components/community/CommunityLiveStream";
 import { 
   ArrowLeft, Users, Lock, Globe, MessageSquare, Heart, 
-  Sparkles, Send, Image as ImageIcon, Video, Share2, Reply, RadioIcon
+  Sparkles, Send, Image as ImageIcon, Video, Share2, Reply, RadioIcon, MoreVertical
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
@@ -465,17 +465,39 @@ export default function Community() {
   }
 
   return (
-    <AppLayout>
-      <div className="max-w-4xl mx-auto space-y-6 animate-fade-in">
-        <Button variant="ghost" onClick={() => navigate("/dashboard")} className="gap-2">
-          <ArrowLeft className="h-4 w-4" />
-          Back to Dashboard
-        </Button>
+    <div className="min-h-screen bg-background">
+      {/* Custom Header for Community */}
+      <header className="fixed top-0 z-50 w-full border-b bg-background">
+        <div className="flex h-14 items-center justify-between px-4">
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={() => navigate("/dashboard")}
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          
+          <div className="flex items-center gap-2">
+            <Avatar className="h-8 w-8">
+              <AvatarImage src={community.profiles?.avatar_url} />
+              <AvatarFallback>
+                {community.name?.[0]?.toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <span className="font-semibold">{community.name}</span>
+          </div>
+          
+          <Button variant="ghost" size="icon">
+            <MoreVertical className="h-5 w-5" />
+          </Button>
+        </div>
+      </header>
 
-        <div className="flex items-center justify-between">
-          <div>
+      <div className="pt-14 max-w-4xl mx-auto space-y-6 animate-fade-in">
+        {/* Community Info Banner */}
+        <div className="px-4 py-3 border-b space-y-2">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <h1 className="text-3xl font-bold">{community.name}</h1>
               {community.is_private ? (
                 <Badge variant="secondary" className="gap-1">
                   <Lock className="h-3 w-3" />
@@ -487,36 +509,36 @@ export default function Community() {
                   Public
                 </Badge>
               )}
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Users className="h-4 w-4" />
+                <span>{members?.length || 0} members</span>
+              </div>
             </div>
-            <p className="text-muted-foreground mt-1">{community.description}</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Users className="h-4 w-4" />
-              <span>{members?.length || 0} members</span>
-            </div>
-            {community.owner_id === profile?.id && (
-              <Button onClick={() => setShowLiveStream(true)} className="gap-2">
-                <RadioIcon className="h-4 w-4" />
-                Go Live
+            <div className="flex items-center gap-2">
+              {community.owner_id === profile?.id && (
+                <Button onClick={() => setShowLiveStream(true)} size="sm" className="gap-2">
+                  <RadioIcon className="h-4 w-4" />
+                  Go Live
+                </Button>
+              )}
+              {community.owner_id !== profile?.id && (
+                <TipButton 
+                  creatorId={community.owner_id} 
+                  creatorName={community.profiles?.username || "Creator"}
+                  communityId={community.id}
+                />
+              )}
+              <Button variant="outline" size="sm" onClick={handleShare} className="gap-2">
+                <Share2 className="h-4 w-4" />
               </Button>
-            )}
-            {community.owner_id !== profile?.id && (
-              <TipButton 
-                creatorId={community.owner_id} 
-                creatorName={community.profiles?.username || "Creator"}
-                communityId={community.id}
-              />
-            )}
-            <Button variant="outline" size="sm" onClick={handleShare} className="gap-2">
-              <Share2 className="h-4 w-4" />
-              Share
-            </Button>
+            </div>
           </div>
+          <p className="text-sm text-muted-foreground">{community.description}</p>
         </div>
 
         {/* Create Post */}
-        <Card>
+        <div className="px-4">
+          <Card>
           <CardContent className="pt-6">
             <div className="space-y-4">
               <Textarea
@@ -566,10 +588,11 @@ export default function Community() {
               </div>
             </div>
           </CardContent>
-        </Card>
+          </Card>
+        </div>
 
         {/* Posts Feed */}
-        <div className="space-y-4">
+        <div className="px-4 space-y-4 pb-6">
           {posts && posts.length > 0 ? (
             posts.map((post: any) => (
               <Card key={post.id} className="overflow-hidden">
@@ -759,6 +782,6 @@ export default function Community() {
           onClose={() => setShowLiveStream(false)}
         />
       )}
-    </AppLayout>
+    </div>
   );
 }

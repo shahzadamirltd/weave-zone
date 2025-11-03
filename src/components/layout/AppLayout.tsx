@@ -44,9 +44,9 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
     <div className="min-h-screen bg-background">
       {/* Top Bar - Hidden on community pages */}
       {!isCommunityPage && (
-        <header className="fixed top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-xl">
+        <header className="fixed top-0 z-50 w-full border-b border-border/30 glass">
           <div className="flex h-16 items-center justify-between px-6">
-            <h1 className="text-xl font-medium tracking-tight">Communities</h1>
+            <h1 className="text-xl font-semibold tracking-tight">Communities</h1>
             <NotificationBell />
           </div>
         </header>
@@ -57,27 +57,27 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
 
       {/* Bottom Navigation - Hidden on community pages */}
       {!isCommunityPage && (
-        <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-t border-border/40">
+        <nav className="fixed bottom-0 left-0 right-0 z-50 glass border-t border-border/30">
           <div className="flex items-center justify-around h-20 px-4 max-w-lg mx-auto">
             {/* Home */}
             <Button
               variant="ghost"
               size="sm"
               onClick={() => navigate("/dashboard")}
-              className={`flex flex-col items-center gap-1.5 h-auto py-2 px-5 rounded-xl transition-colors ${
-                isActive("/dashboard") ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+              className={`flex flex-col items-center gap-1.5 h-auto py-2 px-5 rounded-2xl transition-all ${
+                isActive("/dashboard") ? "text-foreground bg-accent" : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
               }`}
             >
-              <Home className={`h-6 w-6 ${isActive("/dashboard") ? "fill-current" : ""}`} />
-              <span className="text-[10px] font-medium">Home</span>
+              <Home className={`h-6 w-6 transition-all ${isActive("/dashboard") ? "fill-current scale-110" : ""}`} />
+              <span className="text-[10px] font-semibold">Home</span>
             </Button>
 
             {/* Create */}
             <Button
               onClick={() => navigate("/create-community")}
-              className="h-14 w-14 rounded-2xl bg-foreground hover:bg-foreground/90 shadow-lg hover:shadow-xl transition-all hover:scale-105"
+              className="h-16 w-16 rounded-3xl bg-foreground hover:bg-foreground/90 shadow-lg hover:shadow-2xl transition-all hover:scale-110 active:scale-95"
             >
-              <Plus className="h-7 w-7 text-background" />
+              <Plus className="h-8 w-8 text-background" />
             </Button>
 
             {/* Profile */}
@@ -85,17 +85,17 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
               variant="ghost"
               size="sm"
               onClick={() => navigate("/profile")}
-              className={`flex flex-col items-center gap-1.5 h-auto py-2 px-5 rounded-xl transition-colors ${
-                isActive("/profile") ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+              className={`flex flex-col items-center gap-1.5 h-auto py-2 px-5 rounded-2xl transition-all ${
+                isActive("/profile") ? "text-foreground bg-accent" : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
               }`}
             >
-              <Avatar className="h-6 w-6">
+              <Avatar className={`h-6 w-6 transition-all ${isActive("/profile") ? "ring-2 ring-foreground ring-offset-2 ring-offset-background scale-110" : ""}`}>
                 <AvatarImage src={profile?.avatar_url || ""} />
                 <AvatarFallback className={`text-xs ${isActive("/profile") ? "bg-foreground text-background" : "bg-muted"}`}>
                   {profile?.username?.[0]?.toUpperCase() || "U"}
                 </AvatarFallback>
               </Avatar>
-              <span className="text-[10px] font-medium">Profile</span>
+              <span className="text-[10px] font-semibold">Profile</span>
             </Button>
 
             {/* Settings */}
@@ -103,12 +103,12 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
               variant="ghost"
               size="sm"
               onClick={() => navigate("/settings")}
-              className={`flex flex-col items-center gap-1.5 h-auto py-2 px-5 rounded-xl transition-colors ${
-                isActive("/settings") ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+              className={`flex flex-col items-center gap-1.5 h-auto py-2 px-5 rounded-2xl transition-all ${
+                isActive("/settings") ? "text-foreground bg-accent" : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
               }`}
             >
-              <Settings className={`h-6 w-6 ${isActive("/settings") ? "fill-current" : ""}`} />
-              <span className="text-[10px] font-medium">Settings</span>
+              <Settings className={`h-6 w-6 transition-all ${isActive("/settings") ? "fill-current scale-110" : ""}`} />
+              <span className="text-[10px] font-semibold">Settings</span>
             </Button>
           </div>
         </nav>

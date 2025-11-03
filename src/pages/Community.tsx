@@ -467,44 +467,47 @@ export default function Community() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Custom Header */}
-      <header className="border-b bg-background px-4 py-3">
+      <header className="glass border-b border-border/30 px-5 py-3 sticky top-0 z-50">
         <div className="flex items-center gap-3">
           <Button 
             variant="ghost" 
             size="icon"
             onClick={() => navigate("/dashboard")}
-            className="h-8 w-8"
+            className="h-10 w-10 hover:bg-accent/50 transition-all active:scale-90"
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
           
-          <Avatar className="h-10 w-10">
+          <Avatar className="h-10 w-10 ring-2 ring-border/50">
             <AvatarImage src={community.profiles?.avatar_url} />
-            <AvatarFallback>
+            <AvatarFallback className="font-semibold">
               {community.name?.[0]?.toUpperCase()}
             </AvatarFallback>
           </Avatar>
           
           <div className="flex-1">
             <h1 className="font-semibold text-base">{community.name}</h1>
-            <p className="text-xs text-muted-foreground">{members?.length || 0} members</p>
+            <p className="text-xs text-muted-foreground flex items-center gap-1">
+              <Users className="h-3 w-3" />
+              {members?.length || 0} members
+            </p>
           </div>
           
-          <Button variant="ghost" size="icon" className="h-8 w-8">
+          <Button variant="ghost" size="icon" className="h-10 w-10 hover:bg-accent/50 transition-all active:scale-90">
             <MoreVertical className="h-5 w-5" />
           </Button>
         </div>
       </header>
 
       {/* Main Content - Posts Feed */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 animate-fade-in">
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 pb-28">
         {posts && posts.length > 0 ? (
           posts.map((post: any) => (
-            <div key={post.id} className="space-y-3">
-              <div className="flex items-start gap-3">
-                <Avatar className="h-10 w-10">
+            <div key={post.id} className="space-y-3 animate-fade-in">
+              <div className="flex items-start gap-3 p-4 rounded-2xl hover:bg-accent/30 transition-all">
+                <Avatar className="h-10 w-10 ring-2 ring-border/30">
                   <AvatarImage src={post.profiles?.avatar_url} />
-                  <AvatarFallback>
+                  <AvatarFallback className="text-xs font-semibold">
                     {post.profiles?.username?.[0]?.toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
@@ -515,34 +518,34 @@ export default function Community() {
                       {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
                     </span>
                   </div>
-                  <p className="text-sm whitespace-pre-wrap">{post.content}</p>
+                  <p className="text-sm leading-relaxed whitespace-pre-wrap">{post.content}</p>
                   {post.media_urls && post.media_urls.length > 0 && (
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-2 gap-2 mt-3">
                       {post.media_urls.map((url: string, idx: number) => (
-                        <div key={idx} className="rounded-lg overflow-hidden">
+                        <div key={idx} className="rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all">
                           {url.match(/\.(mp4|webm|ogg)$/i) ? (
                             <video src={url} controls className="w-full" />
                           ) : (
-                            <img src={url} alt="Post media" className="w-full object-cover" />
+                            <img src={url} alt="Post media" className="w-full object-cover hover:scale-105 transition-transform" />
                           )}
                         </div>
                       ))}
                     </div>
                   )}
                   
-                  <div className="flex items-center gap-4 py-2">
+                  <div className="flex items-center gap-4 pt-2">
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="gap-1 h-8 px-2"
+                      className="gap-1.5 h-9 px-3 hover:bg-accent/50 rounded-xl transition-all active:scale-95"
                       onClick={() => toggleReactionMutation.mutate(post.id)}
                     >
-                      <Heart className={`h-4 w-4 ${post.reactions?.some((r: any) => r.user_id === profile?.id) ? 'fill-red-500 text-red-500' : ''}`} />
-                      <span className="text-xs">{post.reactions?.length || 0}</span>
+                      <Heart className={`h-4 w-4 transition-all ${post.reactions?.some((r: any) => r.user_id === profile?.id) ? 'fill-red-500 text-red-500 scale-110' : ''}`} />
+                      <span className="text-xs font-medium">{post.reactions?.length || 0}</span>
                     </Button>
-                    <Button variant="ghost" size="sm" className="gap-1 h-8 px-2">
+                    <Button variant="ghost" size="sm" className="gap-1.5 h-9 px-3 hover:bg-accent/50 rounded-xl transition-all active:scale-95">
                       <MessageSquare className="h-4 w-4" />
-                      <span className="text-xs">{commentsData?.filter((c: any) => c.post_id === post.id).length || 0}</span>
+                      <span className="text-xs font-medium">{commentsData?.filter((c: any) => c.post_id === post.id).length || 0}</span>
                     </Button>
                   </div>
 
@@ -637,8 +640,8 @@ export default function Community() {
       </div>
 
       {/* Fixed Bottom Input */}
-      <div className="border-t bg-background px-4 py-3">
-        <div className="flex gap-2 items-center">
+      <div className="glass border-t border-border/30 px-5 py-4 fixed bottom-0 left-0 right-0 z-40">
+        <div className="flex gap-3 items-center max-w-3xl mx-auto">
           <input
             ref={fileInputRef}
             type="file"
@@ -655,12 +658,12 @@ export default function Community() {
             variant="ghost" 
             size="icon"
             onClick={() => fileInputRef.current?.click()}
-            className="h-10 w-10"
+            className="h-11 w-11 hover:bg-accent/50 rounded-xl transition-all active:scale-90"
           >
             <ImageIcon className="h-5 w-5" />
           </Button>
           <Input
-            placeholder="Type a message"
+            placeholder="Type a message..."
             value={postContent}
             onChange={(e) => setPostContent(e.target.value)}
             onKeyDown={(e) => {
@@ -671,21 +674,21 @@ export default function Community() {
                 }
               }
             }}
-            className="flex-1 rounded-full"
+            className="flex-1 rounded-2xl bg-accent/50 border-0 h-11 focus-visible:bg-accent"
           />
           <Button
             onClick={() => createPostMutation.mutate()}
             disabled={(!postContent.trim() && mediaFiles.length === 0) || createPostMutation.isPending || uploading}
             size="icon"
-            className="h-10 w-10 rounded-full"
+            className="h-11 w-11 rounded-2xl shadow-md hover:shadow-lg transition-all active:scale-90"
           >
-            <Send className="h-4 w-4" />
+            <Send className="h-5 w-5" />
           </Button>
         </div>
         {mediaFiles.length > 0 && (
-          <div className="flex gap-2 flex-wrap mt-2">
+          <div className="flex gap-2 flex-wrap mt-3 max-w-3xl mx-auto">
             {mediaFiles.map((file, idx) => (
-              <Badge key={idx} variant="secondary" className="text-xs">{file.name}</Badge>
+              <Badge key={idx} variant="secondary" className="text-xs px-3 py-1 rounded-lg">{file.name}</Badge>
             ))}
           </div>
         )}

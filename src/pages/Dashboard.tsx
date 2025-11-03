@@ -87,113 +87,110 @@ export default function Dashboard() {
   });
 
   const CommunityCard = ({ community, showJoinButton = false }: any) => (
-    <Card 
-      className="group cursor-pointer border-none shadow-sm hover:shadow-md transition-all bg-card" 
+    <div 
+      className="group cursor-pointer border border-border rounded-lg hover:border-foreground/20 transition-all bg-card p-6" 
       onClick={() => navigate(`/community/${community.id}`)}
     >
-      <CardContent className="p-4">
-        <div className="flex gap-3">
-          <div className="flex-1 space-y-2">
-            <div className="flex items-center gap-2">
-              <h3 className="font-semibold text-base line-clamp-1">{community.name}</h3>
-              {community.is_private && <Lock className="h-3 w-3 text-muted-foreground flex-shrink-0" />}
-            </div>
-            <p className="text-sm text-muted-foreground line-clamp-2">
-              {community.description || "No description"}
-            </p>
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Users className="h-3 w-3" />
-              <span>{community.memberships?.[0]?.count || 0} members</span>
-            </div>
+      <div className="flex gap-4 items-start">
+        <div className="flex-1 space-y-3">
+          <div className="flex items-center gap-2">
+            <h3 className="font-medium text-lg tracking-tight line-clamp-1">{community.name}</h3>
+            {community.is_private && <Lock className="h-4 w-4 text-muted-foreground flex-shrink-0" />}
           </div>
-          {showJoinButton && (
-            <Button 
-              size="sm" 
-              variant={community.isJoined ? "secondary" : "outline"}
-              className="h-8 px-4 text-xs"
-              disabled={community.isJoined}
-              onClick={(e) => {
-                e.stopPropagation();
-              }}
-            >
-              {community.isJoined ? "Joined" : "Join"}
-            </Button>
-          )}
+          <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
+            {community.description || "No description"}
+          </p>
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Users className="h-3.5 w-3.5" />
+            <span>{community.memberships?.[0]?.count || 0} members</span>
+          </div>
         </div>
-      </CardContent>
-    </Card>
+        {showJoinButton && (
+          <Button 
+            size="sm" 
+            variant={community.isJoined ? "secondary" : "default"}
+            className="h-9 px-4 text-xs shrink-0"
+            disabled={community.isJoined}
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
+          >
+            {community.isJoined ? "Joined" : "Join"}
+          </Button>
+        )}
+      </div>
+    </div>
   );
 
   return (
     <AppLayout>
-      <div className="max-w-2xl mx-auto px-4 space-y-4">
+      <div className="max-w-3xl mx-auto px-6 py-8 space-y-8">
+        <div className="space-y-2">
+          <h1 className="text-3xl font-semibold tracking-tight">Communities</h1>
+          <p className="text-muted-foreground">Discover and join communities</p>
+        </div>
+        
         <Tabs defaultValue="created" className="w-full">
-          <TabsList className="w-full grid grid-cols-3 h-12 bg-muted/50">
-            <TabsTrigger value="created" className="text-xs">
+          <TabsList className="w-full grid grid-cols-3 h-11 bg-muted/30 p-1">
+            <TabsTrigger value="created" className="text-sm font-medium data-[state=active]:bg-background">
               Created
             </TabsTrigger>
-            <TabsTrigger value="joined" className="text-xs">
+            <TabsTrigger value="joined" className="text-sm font-medium data-[state=active]:bg-background">
               Joined
             </TabsTrigger>
-            <TabsTrigger value="discover" className="text-xs">
+            <TabsTrigger value="discover" className="text-sm font-medium data-[state=active]:bg-background">
               Discover
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="created" className="space-y-3 mt-4">
+          <TabsContent value="created" className="space-y-4 mt-6">
             {createdCommunities && createdCommunities.length > 0 ? (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {createdCommunities.map((community: any) => (
                   <CommunityCard key={community.id} community={community} />
                 ))}
               </div>
             ) : (
-              <Card className="border-none shadow-none">
-                <CardContent className="flex flex-col items-center justify-center py-16">
-                  <Users className="h-16 w-16 text-muted-foreground/30 mb-4" />
-                  <p className="text-center text-muted-foreground text-sm">
-                    No communities yet
-                  </p>
-                </CardContent>
-              </Card>
+              <div className="flex flex-col items-center justify-center py-20 border border-dashed border-border rounded-lg">
+                <Users className="h-12 w-12 text-muted-foreground/20 mb-3" />
+                <p className="text-center text-muted-foreground text-sm">
+                  No communities yet
+                </p>
+              </div>
             )}
           </TabsContent>
 
-          <TabsContent value="joined" className="space-y-3 mt-4">
+          <TabsContent value="joined" className="space-y-4 mt-6">
             {joinedCommunities && joinedCommunities.length > 0 ? (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {joinedCommunities.map((community: any) => (
                   <CommunityCard key={community.id} community={community} />
                 ))}
               </div>
             ) : (
-              <Card className="border-none shadow-none">
-                <CardContent className="flex flex-col items-center justify-center py-16">
-                  <Users className="h-16 w-16 text-muted-foreground/30 mb-4" />
-                  <p className="text-center text-muted-foreground text-sm">
-                    No communities joined yet
-                  </p>
-                </CardContent>
-              </Card>
+              <div className="flex flex-col items-center justify-center py-20 border border-dashed border-border rounded-lg">
+                <Users className="h-12 w-12 text-muted-foreground/20 mb-3" />
+                <p className="text-center text-muted-foreground text-sm">
+                  No communities joined yet
+                </p>
+              </div>
             )}
           </TabsContent>
 
-          <TabsContent value="discover" className="space-y-3 mt-4">
+          <TabsContent value="discover" className="space-y-4 mt-6">
             {allCommunities && allCommunities.length > 0 ? (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {allCommunities.map((community: any) => (
                   <CommunityCard key={community.id} community={community} showJoinButton />
                 ))}
               </div>
             ) : (
-              <Card className="border-none shadow-none">
-                <CardContent className="flex flex-col items-center justify-center py-16">
-                  <Users className="h-16 w-16 text-muted-foreground/30 mb-4" />
-                  <p className="text-center text-muted-foreground text-sm">
-                    No communities available
-                  </p>
-                </CardContent>
-              </Card>
+              <div className="flex flex-col items-center justify-center py-20 border border-dashed border-border rounded-lg">
+                <Users className="h-12 w-12 text-muted-foreground/20 mb-3" />
+                <p className="text-center text-muted-foreground text-sm">
+                  No communities available
+                </p>
+              </div>
             )}
           </TabsContent>
         </Tabs>

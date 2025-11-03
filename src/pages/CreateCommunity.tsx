@@ -118,117 +118,112 @@ export default function CreateCommunity() {
 
   return (
     <AppLayout>
-      <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
+      <div className="max-w-2xl mx-auto px-6 py-8 space-y-8">
         <Button
           variant="ghost"
           onClick={() => navigate("/dashboard")}
-          className="gap-2"
+          className="gap-2 -ml-2 text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to Dashboard
+          Back
         </Button>
 
-        <div>
-          <h1 className="text-3xl font-bold mb-2">Create Community</h1>
+        <div className="space-y-2">
+          <h1 className="text-3xl font-semibold tracking-tight">Create Community</h1>
           <p className="text-muted-foreground">
-            Build your own premium niche community
+            Build your own community
           </p>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Community Details</CardTitle>
-            <CardDescription>
-              Provide information about your new community
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="border border-border rounded-2xl p-6 space-y-6 bg-card">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="name" className="text-sm font-medium">Community Name</Label>
+              <Input
+                id="name"
+                name="name"
+                placeholder="e.g., Web Developers"
+                required
+                maxLength={100}
+                className="h-11"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="description" className="text-sm font-medium">Description</Label>
+              <Textarea
+                id="description"
+                name="description"
+                placeholder="Describe what your community is about..."
+                rows={4}
+                maxLength={500}
+                className="resize-none"
+              />
+            </div>
+
+            <div className="flex items-center justify-between rounded-xl border border-border p-4 bg-muted/30">
+              <div className="space-y-1">
+                <Label htmlFor="private" className="text-sm font-medium">Private Community</Label>
+                <p className="text-xs text-muted-foreground">
+                  Only people with an invite link can join
+                </p>
+              </div>
+              <Switch
+                id="private"
+                checked={isPrivate}
+                onCheckedChange={setIsPrivate}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="pricing" className="text-sm font-medium">Pricing Type</Label>
+              <select
+                id="pricing"
+                className="w-full h-11 px-4 border border-input rounded-lg bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                value={pricingType}
+                onChange={(e) => setPricingType(e.target.value as any)}
+              >
+                <option value="free">Free</option>
+                <option value="one_time">One-Time Payment</option>
+                <option value="lifetime">Lifetime Access</option>
+                <option value="recurring_monthly">Monthly Subscription</option>
+              </select>
+            </div>
+
+            {pricingType !== "free" && (
               <div className="space-y-2">
-                <Label htmlFor="name">Community Name *</Label>
+                <Label htmlFor="price" className="text-sm font-medium">Price ($)</Label>
                 <Input
-                  id="name"
-                  name="name"
-                  placeholder="e.g., Web Developers"
+                  id="price"
+                  name="price"
+                  type="number"
+                  step="0.01"
+                  min="20"
+                  placeholder="20.00"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
                   required
-                  maxLength={100}
+                  className="h-11"
                 />
+                <p className="text-xs text-muted-foreground">Minimum price is $20</p>
               </div>
+            )}
 
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  name="description"
-                  placeholder="Describe what your community is about..."
-                  rows={4}
-                  maxLength={500}
-                />
-              </div>
-
-              <div className="flex items-center justify-between rounded-lg border p-4">
-                <div className="space-y-0.5">
-                  <Label htmlFor="private">Private Community</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Only people with an invite link can join
-                  </p>
-                </div>
-                <Switch
-                  id="private"
-                  checked={isPrivate}
-                  onCheckedChange={setIsPrivate}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="pricing">Pricing Type</Label>
-                <select
-                  id="pricing"
-                  className="w-full px-3 py-2 border rounded-md bg-background"
-                  value={pricingType}
-                  onChange={(e) => setPricingType(e.target.value as any)}
-                >
-                  <option value="free">Free</option>
-                  <option value="one_time">One-Time Payment</option>
-                  <option value="lifetime">Lifetime Access</option>
-                  <option value="recurring_monthly">Monthly Subscription</option>
-                </select>
-              </div>
-
-              {pricingType !== "free" && (
-                <div className="space-y-2">
-                  <Label htmlFor="price">Price ($)</Label>
-                  <Input
-                    id="price"
-                    name="price"
-                    type="number"
-                    step="0.01"
-                    min="20"
-                    placeholder="20.00"
-                    value={price}
-                    onChange={(e) => setPrice(e.target.value)}
-                    required
-                  />
-                  <p className="text-sm text-muted-foreground">Minimum price is $20</p>
-                </div>
-              )}
-
-              <div className="flex gap-3 pt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => navigate("/dashboard")}
-                  className="flex-1"
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={isLoading} className="flex-1">
-                  {isLoading ? "Creating..." : "Create Community"}
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
+            <div className="flex gap-3 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => navigate("/dashboard")}
+                className="flex-1 h-11"
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isLoading} className="flex-1 h-11">
+                {isLoading ? "Creating..." : "Create Community"}
+              </Button>
+            </div>
+          </form>
+        </div>
       </div>
     </AppLayout>
   );

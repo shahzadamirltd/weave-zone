@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { AppLayout } from "@/components/layout/AppLayout";
+import { Sidebar } from "@/components/layout/Sidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -117,26 +117,28 @@ export default function CreateCommunity() {
   };
 
   return (
-    <AppLayout>
-      <div className="max-w-2xl mx-auto px-6 py-8 space-y-8">
-        <Button
-          variant="ghost"
-          onClick={() => navigate("/dashboard")}
-          className="gap-2 -ml-2 text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back
-        </Button>
+    <div className="flex min-h-screen bg-background">
+      <Sidebar />
+      
+      <main className="flex-1 ml-64">
+        <header className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border/50 px-8 py-4">
+          <div className="flex items-center gap-4">
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => navigate("/dashboard")}
+              className="rounded-lg"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <h1 className="text-2xl font-bold text-foreground">Create Community</h1>
+          </div>
+        </header>
 
-        <div className="space-y-2">
-          <h1 className="text-3xl font-semibold tracking-tight">Create Community</h1>
-          <p className="text-muted-foreground">
-            Build your own community
-          </p>
-        </div>
-
-        <div className="border border-border rounded-2xl p-6 space-y-6 bg-card">
-          <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="p-8">
+          <div className="max-w-2xl">
+            <div className="border border-border rounded-2xl p-6 space-y-6 bg-card">
+              <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="name" className="text-sm font-medium">Community Name</Label>
               <Input
@@ -222,9 +224,11 @@ export default function CreateCommunity() {
                 {isLoading ? "Creating..." : "Create Community"}
               </Button>
             </div>
-          </form>
+              </form>
+            </div>
+          </div>
         </div>
-      </div>
-    </AppLayout>
+      </main>
+    </div>
   );
 }

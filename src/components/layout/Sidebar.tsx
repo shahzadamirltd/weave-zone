@@ -1,6 +1,7 @@
-import { Home, CreditCard, Settings, HelpCircle } from "lucide-react";
-import { NavLink } from "react-router-dom";
+import { Home, CreditCard, Settings, HelpCircle, Plus } from "lucide-react";
+import { NavLink, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 const navigation = [
   { name: "Dashboard", icon: Home, to: "/dashboard" },
@@ -10,6 +11,8 @@ const navigation = [
 ];
 
 export function Sidebar() {
+  const navigate = useNavigate();
+
   return (
     <aside className="fixed left-0 top-0 h-full w-64 bg-[#1a1a1a] border-r border-border/10 flex flex-col">
       <div className="p-6">
@@ -35,6 +38,16 @@ export function Sidebar() {
           </NavLink>
         ))}
       </nav>
+
+      <div className="p-4">
+        <Button 
+          onClick={() => navigate("/create-community")}
+          className="w-full bg-white text-black hover:bg-white/90 rounded-xl py-6"
+        >
+          <Plus className="h-5 w-5 mr-2" />
+          Create Community
+        </Button>
+      </div>
     </aside>
   );
 }

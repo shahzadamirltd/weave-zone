@@ -15,6 +15,8 @@ import CommunityPricing from "./pages/CommunityPricing";
 import CreatorDashboard from "./pages/CreatorDashboard";
 import StripeSetup from "./pages/StripeSetup";
 import Settings from "./pages/Settings";
+import Payments from "./pages/Payments";
+import Help from "./pages/Help";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -111,6 +113,22 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <Settings />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/payments"
+            element={
+              <ProtectedRoute>
+                <Payments />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/help"
+            element={
+              <ProtectedRoute>
+                <Help />
               </ProtectedRoute>
             }
           />

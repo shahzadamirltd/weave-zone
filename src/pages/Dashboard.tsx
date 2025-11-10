@@ -3,8 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search } from "lucide-react";
+import { Search, Share2, Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -30,10 +32,20 @@ export default function Dashboard() {
     queryFn: async () => {
       if (!profile) return [];
 
+      // Get communities where user is owner or member
+      const { data: memberships } = await supabase
+        .from("memberships")
+        .select("community_id")
+        .eq("user_id", profile.id);
+
+      const communityIds = memberships?.map(m => m.community_id) || [];
+      
+      if (communityIds.length === 0) return [];
+
       const { data } = await supabase
         .from("communities")
         .select("*, memberships(count)")
-        .eq("owner_id", profile.id)
+        .in("id", communityIds)
         .order("created_at", { ascending: false });
 
       return data || [];
@@ -42,9 +54,24 @@ export default function Dashboard() {
   });
 
   const CommunityCard = ({ community }: any) => {
+    const { toast } = useToast();
+    const [copied, setCopied] = useState(false);
     const memberCount = community.memberships?.[0]?.count || 0;
     const isPaid = community.pricing_type === "paid" || community.pricing_type === "subscription";
     const price = community.price_amount || 0;
+
+    const communityUrl = `${window.location.origin}/community/${community.id}`;
+
+    const handleShare = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      navigator.clipboard.writeText(communityUrl);
+      setCopied(true);
+      toast({
+        title: "Link copied!",
+        description: "Community link copied to clipboard",
+      });
+      setTimeout(() => setCopied(false), 2000);
+    };
 
     return (
       <div 
@@ -97,6 +124,14 @@ export default function Dashboard() {
               </Badge>
             </>
           )}
+          <Button 
+            size="sm"
+            variant="outline"
+            className="rounded-xl w-10 h-10 p-0"
+            onClick={handleShare}
+          >
+            {copied ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
+          </Button>
           <Button 
             size="sm"
             className="rounded-xl px-6"

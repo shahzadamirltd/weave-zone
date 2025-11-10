@@ -44,10 +44,10 @@ export default function CreateCommunity() {
       const user = session.user;
 
       // Validate minimum price
-      if (pricingType !== "free" && parseFloat(price) < 20) {
+      if (pricingType !== "free" && parseFloat(price) < 5) {
         toast({
           title: "Invalid Price",
-          description: "Minimum price is $20",
+          description: "Minimum price is $5",
           variant: "destructive",
         });
         setIsLoading(false);
@@ -200,14 +200,14 @@ export default function CreateCommunity() {
                   name="price"
                   type="number"
                   step="0.01"
-                  min="20"
-                  placeholder="20.00"
+                  min="5"
+                  placeholder="5.00"
                   value={price}
                   onChange={(e) => setPrice(e.target.value)}
                   required
                   className="h-11"
                 />
-                <p className="text-xs text-muted-foreground">Minimum price is $20</p>
+                <p className="text-xs text-muted-foreground">Minimum price is $5</p>
               </div>
             )}
 

@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import { requestNotificationPermission, showNotification, initNotificationSound } from "@/services/notificationService";
 
 export function NotificationBell() {
   const [hasPermission, setHasPermission] = useState(false);
@@ -45,13 +46,11 @@ export function NotificationBell() {
 
   const unreadCount = notifications?.filter((n: any) => !n.is_read).length || 0;
 
-  const requestNotificationPermission = async () => {
-    if ("Notification" in window) {
-      const permission = await Notification.requestPermission();
-      setHasPermission(permission === "granted");
-      if (permission === "granted") {
-        toast({ title: "Notifications enabled" });
-      }
+  const handleRequestPermission = async () => {
+    const granted = await requestNotificationPermission();
+    setHasPermission(granted);
+    if (granted) {
+      toast({ title: "Notifications enabled" });
     }
   };
 
@@ -59,6 +58,8 @@ export function NotificationBell() {
     if ("Notification" in window) {
       setHasPermission(Notification.permission === "granted");
     }
+    // Initialize notification sound
+    initNotificationSound();
   }, []);
 
   // Listen for new notifications
@@ -77,12 +78,9 @@ export function NotificationBell() {
         },
         (payload: any) => {
           refetch();
-          if (hasPermission) {
-            new Notification(payload.new.title, {
-              body: payload.new.message,
-              icon: "/favicon.ico",
-            });
-          }
+          // Show notification with sound
+          showNotification(payload.new.title, payload.new.message);
+          // Also show toast
           toast({
             title: payload.new.title,
             description: payload.new.message,
@@ -124,7 +122,7 @@ export function NotificationBell() {
           <div className="flex items-center justify-between">
             <h4 className="font-semibold">Notifications</h4>
             {!hasPermission && (
-              <Button size="sm" variant="outline" onClick={requestNotificationPermission}>
+              <Button size="sm" variant="outline" onClick={handleRequestPermission}>
                 Enable
               </Button>
             )}

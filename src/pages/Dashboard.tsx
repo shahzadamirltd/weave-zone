@@ -3,7 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, Share2, Check } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Search, Share2, Check, Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
@@ -27,25 +28,15 @@ export default function Dashboard() {
     },
   });
 
-  const { data: communities } = useQuery({
-    queryKey: ["my-communities"],
+  const { data: ownedCommunities } = useQuery({
+    queryKey: ["owned-communities", profile?.id],
     queryFn: async () => {
       if (!profile) return [];
-
-      // Get communities where user is owner or member
-      const { data: memberships } = await supabase
-        .from("memberships")
-        .select("community_id")
-        .eq("user_id", profile.id);
-
-      const communityIds = memberships?.map(m => m.community_id) || [];
-      
-      if (communityIds.length === 0) return [];
 
       const { data } = await supabase
         .from("communities")
         .select("*, memberships(count)")
-        .in("id", communityIds)
+        .eq("owner_id", profile.id)
         .order("created_at", { ascending: false });
 
       return data || [];
@@ -53,11 +44,27 @@ export default function Dashboard() {
     enabled: !!profile,
   });
 
-  const CommunityCard = ({ community }: any) => {
+  const { data: joinedCommunities } = useQuery({
+    queryKey: ["joined-communities", profile?.id],
+    queryFn: async () => {
+      if (!profile) return [];
+
+      const { data: memberships } = await supabase
+        .from("memberships")
+        .select("community_id, communities!inner(*, memberships(count))")
+        .eq("user_id", profile.id)
+        .neq("role", "owner");
+
+      return memberships?.map(m => m.communities).filter(Boolean) || [];
+    },
+    enabled: !!profile,
+  });
+
+  const CommunityCard = ({ community, showEdit }: any) => {
     const { toast } = useToast();
     const [copied, setCopied] = useState(false);
     const memberCount = community.memberships?.[0]?.count || 0;
-    const isPaid = community.pricing_type === "paid" || community.pricing_type === "subscription";
+    const isPaid = community.pricing_type !== "free";
     const price = community.price_amount || 0;
 
     const communityUrl = `${window.location.origin}/community/${community.id}`;
@@ -71,6 +78,11 @@ export default function Dashboard() {
         description: "Community link copied to clipboard",
       });
       setTimeout(() => setCopied(false), 2000);
+    };
+
+    const handleEdit = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      navigate(`/community/${community.id}/edit`);
     };
 
     return (
@@ -124,6 +136,16 @@ export default function Dashboard() {
               </Badge>
             </>
           )}
+          {showEdit && (
+            <Button 
+              size="sm"
+              variant="outline"
+              className="rounded-xl w-10 h-10 p-0"
+              onClick={handleEdit}
+            >
+              <Settings className="h-4 w-4" />
+            </Button>
+          )}
           <Button 
             size="sm"
             variant="outline"
@@ -155,7 +177,7 @@ export default function Dashboard() {
         {/* Header */}
         <header className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border/50 px-8 py-4">
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-foreground">My Communities</h1>
+            <h1 className="text-2xl font-bold text-foreground">Communities</h1>
             <Button variant="ghost" size="icon" className="rounded-lg">
               <Search className="h-5 w-5" />
             </Button>
@@ -164,21 +186,47 @@ export default function Dashboard() {
 
         {/* Content */}
         <div className="p-8">
-          <div className="max-w-5xl space-y-4">
-            {communities && communities.length > 0 ? (
-              communities.map((community: any) => (
-                <CommunityCard key={community.id} community={community} />
-              ))
-            ) : (
-              <div className="flex flex-col items-center justify-center py-20 glass border-2 border-dashed border-border/50 rounded-2xl">
-                <p className="text-center text-muted-foreground font-medium">
-                  No communities yet
-                </p>
-                <p className="text-center text-muted-foreground/60 text-sm mt-1">
-                  Create your first community to get started
-                </p>
-              </div>
-            )}
+          <div className="max-w-5xl">
+            <Tabs defaultValue="owned" className="w-full">
+              <TabsList className="grid w-full max-w-md grid-cols-2">
+                <TabsTrigger value="owned">My Communities</TabsTrigger>
+                <TabsTrigger value="joined">Joined Communities</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="owned" className="space-y-4 mt-6">
+                {ownedCommunities && ownedCommunities.length > 0 ? (
+                  ownedCommunities.map((community: any) => (
+                    <CommunityCard key={community.id} community={community} showEdit={true} />
+                  ))
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-20 glass border-2 border-dashed border-border/50 rounded-2xl">
+                    <p className="text-center text-muted-foreground font-medium">
+                      No communities yet
+                    </p>
+                    <p className="text-center text-muted-foreground/60 text-sm mt-1">
+                      Create your first community to get started
+                    </p>
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="joined" className="space-y-4 mt-6">
+                {joinedCommunities && joinedCommunities.length > 0 ? (
+                  joinedCommunities.map((community: any) => (
+                    <CommunityCard key={community.id} community={community} showEdit={false} />
+                  ))
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-20 glass border-2 border-dashed border-border/50 rounded-2xl">
+                    <p className="text-center text-muted-foreground font-medium">
+                      No joined communities yet
+                    </p>
+                    <p className="text-center text-muted-foreground/60 text-sm mt-1">
+                      Join a community to see it here
+                    </p>
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
           </div>
         </div>
       </main>

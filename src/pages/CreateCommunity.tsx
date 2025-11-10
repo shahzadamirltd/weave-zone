@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Upload } from "lucide-react";
 
 export default function CreateCommunity() {
   const navigate = useNavigate();
@@ -18,6 +18,20 @@ export default function CreateCommunity() {
   const [isPrivate, setIsPrivate] = useState(false);
   const [pricingType, setPricingType] = useState<"free" | "one_time" | "lifetime" | "recurring_monthly">("free");
   const [price, setPrice] = useState("");
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string>("");
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setAvatarFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAvatarPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -28,6 +42,16 @@ export default function CreateCommunity() {
     const description = formData.get("description") as string;
 
     try {
+      // Validate avatar
+      if (!avatarFile) {
+        toast({
+          title: "Image Required",
+          description: "Please upload a community image",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
       // Get authenticated user and session
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
@@ -71,6 +95,25 @@ export default function CreateCommunity() {
         return;
       }
 
+      // Upload avatar
+      let avatarUrl = "";
+      if (avatarFile) {
+        const fileExt = avatarFile.name.split('.').pop();
+        const fileName = `${user.id}/${Math.random()}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('community-media')
+          .upload(fileName, avatarFile);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('community-media')
+          .getPublicUrl(fileName);
+        
+        avatarUrl = publicUrl;
+      }
+
       const inviteCode = isPrivate ? Math.random().toString(36).substring(2, 10) : null;
 
       const { data: community, error } = await supabase
@@ -83,6 +126,7 @@ export default function CreateCommunity() {
           invite_code: inviteCode,
           pricing_type: pricingType,
           price_amount: pricingType !== "free" && price ? parseFloat(price) : null,
+          avatar_url: avatarUrl,
         })
         .select()
         .single();
@@ -139,6 +183,36 @@ export default function CreateCommunity() {
           <div className="max-w-2xl">
             <div className="border border-border rounded-2xl p-6 space-y-6 bg-card">
               <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Avatar Upload */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Community Image *</Label>
+                  <div className="flex items-center gap-4">
+                    {avatarPreview && (
+                      <div className="w-24 h-24 rounded-xl overflow-hidden border-2 border-border">
+                        <img src={avatarPreview} alt="Community" className="w-full h-full object-cover" />
+                      </div>
+                    )}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => document.getElementById('avatar-upload')?.click()}
+                      className="gap-2"
+                    >
+                      <Upload className="h-4 w-4" />
+                      {avatarPreview ? 'Change Image' : 'Upload Image'}
+                    </Button>
+                    <input
+                      id="avatar-upload"
+                      type="file"
+                      accept="image/*"
+                      required
+                      className="hidden"
+                      onChange={handleAvatarChange}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">Upload a community image (required)</p>
+                </div>
+
             <div className="space-y-2">
               <Label htmlFor="name" className="text-sm font-medium">Community Name</Label>
               <Input

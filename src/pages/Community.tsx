@@ -12,6 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { TipButton } from "@/components/TipButton";
 import { CommunityLiveStream } from "@/components/community/CommunityLiveStream";
+import { EmojiReactionPicker } from "@/components/EmojiReactionPicker";
+import { EmojiType, getEmojiNotificationMessage } from "@/services/notificationService";
 import { 
   ArrowLeft, Users, Lock, Globe, MessageSquare, Heart, 
   Sparkles, Send, Image as ImageIcon, Video, Share2, Reply, RadioIcon, MoreVertical
@@ -107,7 +109,7 @@ export default function Community() {
         .select(`
           *,
           profiles(*),
-          reactions(id, user_id, type)
+          reactions(id, user_id, type, emoji)
         `)
         .eq("community_id", id)
         .order("created_at", { ascending: false });
@@ -126,7 +128,7 @@ export default function Community() {
         .select(`
           *,
           profiles(*),
-          comment_reactions(id, user_id, type)
+          comment_reactions(id, user_id, type, emoji)
         `)
         .in("post_id", postIds)
         .order("created_at", { ascending: true });
@@ -271,7 +273,7 @@ export default function Community() {
   });
 
   const toggleReactionMutation = useMutation({
-    mutationFn: async (postId: string) => {
+    mutationFn: async ({ postId, emoji }: { postId: string; emoji: EmojiType }) => {
       if (!profile) throw new Error("Not authenticated");
       
       const { data: existing } = await supabase
@@ -279,24 +281,33 @@ export default function Community() {
         .select("*")
         .eq("post_id", postId)
         .eq("user_id", profile.id)
-        .eq("type", "like")
         .maybeSingle();
 
       if (existing) {
-        const { error } = await supabase.from("reactions").delete().eq("id", existing.id);
-        if (error) throw error;
-        return { action: 'removed' };
+        // If same emoji, remove it; otherwise update it
+        if ((existing as any).emoji === emoji) {
+          const { error } = await supabase.from("reactions").delete().eq("id", existing.id);
+          if (error) throw error;
+          return { action: 'removed' };
+        } else {
+          const { error } = await supabase.from("reactions")
+            .update({ emoji, type: "like" })
+            .eq("id", existing.id);
+          if (error) throw error;
+          return { action: 'updated' };
+        }
       } else {
         const { error } = await supabase.from("reactions").insert({
           post_id: postId,
           user_id: profile.id,
           type: "like",
+          emoji: emoji,
         });
         if (error) throw error;
         return { action: 'added' };
       }
     },
-    onMutate: async (postId: string) => {
+    onMutate: async ({ postId, emoji }: { postId: string; emoji: EmojiType }) => {
       await queryClient.cancelQueries({ queryKey: ["posts", id] });
       const previousPosts = queryClient.getQueryData(["posts", id]);
       
@@ -305,10 +316,12 @@ export default function Community() {
         return old.map((post: any) => {
           if (post.id !== postId) return post;
           
-          const hasLiked = post.reactions?.some((r: any) => r.user_id === profile?.id);
-          const newReactions = hasLiked
-            ? post.reactions.filter((r: any) => r.user_id !== profile?.id)
-            : [...(post.reactions || []), { user_id: profile?.id, type: "like" }];
+          const hasReaction = post.reactions?.find((r: any) => r.user_id === profile?.id);
+          const newReactions = hasReaction
+            ? (hasReaction.emoji === emoji 
+                ? post.reactions.filter((r: any) => r.user_id !== profile?.id)
+                : post.reactions.map((r: any) => r.user_id === profile?.id ? { ...r, emoji } : r))
+            : [...(post.reactions || []), { user_id: profile?.id, type: "like", emoji }];
           
           return { ...post, reactions: newReactions };
         });
@@ -328,7 +341,7 @@ export default function Community() {
   });
 
   const toggleCommentReactionMutation = useMutation({
-    mutationFn: async (commentId: string) => {
+    mutationFn: async ({ commentId, emoji }: { commentId: string; emoji: EmojiType }) => {
       if (!profile) throw new Error("Not authenticated");
       
       const { data: existing } = await supabase
@@ -336,22 +349,30 @@ export default function Community() {
         .select("*")
         .eq("comment_id", commentId)
         .eq("user_id", profile.id)
-        .eq("type", "like")
         .maybeSingle();
 
       if (existing) {
-        const { error } = await supabase.from("comment_reactions").delete().eq("id", existing.id);
-        if (error) throw error;
+        // If same emoji, remove it; otherwise update it
+        if ((existing as any).emoji === emoji) {
+          const { error } = await supabase.from("comment_reactions").delete().eq("id", existing.id);
+          if (error) throw error;
+        } else {
+          const { error } = await supabase.from("comment_reactions")
+            .update({ emoji, type: "like" })
+            .eq("id", existing.id);
+          if (error) throw error;
+        }
       } else {
         const { error } = await supabase.from("comment_reactions").insert({
           comment_id: commentId,
           user_id: profile.id,
           type: "like",
+          emoji: emoji,
         });
         if (error) throw error;
       }
     },
-    onMutate: async (commentId: string) => {
+    onMutate: async ({ commentId, emoji }: { commentId: string; emoji: EmojiType }) => {
       await queryClient.cancelQueries({ queryKey: ["comments", id] });
       const previousComments = queryClient.getQueryData(["comments", id]);
       
@@ -360,10 +381,12 @@ export default function Community() {
         return old.map((comment: any) => {
           if (comment.id !== commentId) return comment;
           
-          const hasLiked = comment.comment_reactions?.some((r: any) => r.user_id === profile?.id);
-          const newReactions = hasLiked
-            ? comment.comment_reactions.filter((r: any) => r.user_id !== profile?.id)
-            : [...(comment.comment_reactions || []), { user_id: profile?.id, type: "like" }];
+          const hasReaction = comment.comment_reactions?.find((r: any) => r.user_id === profile?.id);
+          const newReactions = hasReaction
+            ? (hasReaction.emoji === emoji 
+                ? comment.comment_reactions.filter((r: any) => r.user_id !== profile?.id)
+                : comment.comment_reactions.map((r: any) => r.user_id === profile?.id ? { ...r, emoji } : r))
+            : [...(comment.comment_reactions || []), { user_id: profile?.id, type: "like", emoji }];
           
           return { ...comment, comment_reactions: newReactions };
         });
@@ -534,16 +557,12 @@ export default function Community() {
                   )}
                   
                   <div className="flex items-center gap-4 pt-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="gap-1.5 h-9 px-3 hover:bg-accent/50 rounded-xl transition-all active:scale-95"
-                      onClick={() => toggleReactionMutation.mutate(post.id)}
-                    >
-                      <Heart className={`h-4 w-4 transition-all ${post.reactions?.some((r: any) => r.user_id === profile?.id) ? 'fill-red-500 text-red-500 scale-110' : ''}`} />
-                      <span className="text-xs font-medium">{post.reactions?.length || 0}</span>
-                    </Button>
-                    <Button variant="ghost" size="sm" className="gap-1.5 h-9 px-3 hover:bg-accent/50 rounded-xl transition-all active:scale-95">
+                    <EmojiReactionPicker
+                      onSelect={(emoji) => toggleReactionMutation.mutate({ postId: post.id, emoji })}
+                      currentEmoji={post.reactions?.find((r: any) => r.user_id === profile?.id)?.emoji}
+                    />
+                    <span className="text-xs font-medium">{post.reactions?.length || 0}</span>
+                    <Button variant="ghost" size="sm" className="gap-1.5 h-8 px-3 hover:bg-accent/50 rounded-xl transition-all active:scale-95">
                       <MessageSquare className="h-4 w-4" />
                       <span className="text-xs font-medium">{commentsData?.filter((c: any) => c.post_id === post.id).length || 0}</span>
                     </Button>
@@ -566,15 +585,11 @@ export default function Community() {
                               <p className="text-xs">{comment.content}</p>
                             </div>
                             <div className="flex items-center gap-3 px-2">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-auto p-0 text-xs hover:bg-transparent"
-                                onClick={() => toggleCommentReactionMutation.mutate(comment.id)}
-                              >
-                                <Heart className={`h-3 w-3 mr-1 ${comment.comment_reactions?.some((r: any) => r.user_id === profile?.id) ? 'fill-red-500 text-red-500' : ''}`} />
-                                {comment.comment_reactions?.length || 0}
-                              </Button>
+                              <EmojiReactionPicker
+                                onSelect={(emoji) => toggleCommentReactionMutation.mutate({ commentId: comment.id, emoji })}
+                                currentEmoji={comment.comment_reactions?.find((r: any) => r.user_id === profile?.id)?.emoji}
+                              />
+                              <span className="text-xs">{comment.comment_reactions?.length || 0}</span>
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -605,15 +620,11 @@ export default function Community() {
                                 <p className="text-xs">{reply.content}</p>
                               </div>
                               <div className="flex items-center gap-2 px-2">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-auto p-0 text-xs hover:bg-transparent"
-                                  onClick={() => toggleCommentReactionMutation.mutate(reply.id)}
-                                >
-                                  <Heart className={`h-3 w-3 mr-1 ${reply.comment_reactions?.some((r: any) => r.user_id === profile?.id) ? 'fill-red-500 text-red-500' : ''}`} />
-                                  {reply.comment_reactions?.length || 0}
-                                </Button>
+                                <EmojiReactionPicker
+                                  onSelect={(emoji) => toggleCommentReactionMutation.mutate({ commentId: reply.id, emoji })}
+                                  currentEmoji={reply.comment_reactions?.find((r: any) => r.user_id === profile?.id)?.emoji}
+                                />
+                                <span className="text-xs">{reply.comment_reactions?.length || 0}</span>
                                 <span className="text-xs text-muted-foreground">
                                   {formatDistanceToNow(new Date(reply.created_at), { addSuffix: true })}
                                 </span>

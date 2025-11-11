@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           comment_id: string
           created_at: string
+          emoji: string | null
           id: string
           type: string
           user_id: string
@@ -25,6 +26,7 @@ export type Database = {
         Insert: {
           comment_id: string
           created_at?: string
+          emoji?: string | null
           id?: string
           type?: string
           user_id: string
@@ -32,6 +34,7 @@ export type Database = {
         Update: {
           comment_id?: string
           created_at?: string
+          emoji?: string | null
           id?: string
           type?: string
           user_id?: string
@@ -100,6 +103,8 @@ export type Database = {
       }
       communities: {
         Row: {
+          allow_member_posts: boolean | null
+          allowed_posters: string[] | null
           approval_required: boolean
           avatar_url: string | null
           created_at: string
@@ -118,6 +123,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          allow_member_posts?: boolean | null
+          allowed_posters?: string[] | null
           approval_required?: boolean
           avatar_url?: string | null
           created_at?: string
@@ -136,6 +143,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          allow_member_posts?: boolean | null
+          allowed_posters?: string[] | null
           approval_required?: boolean
           avatar_url?: string | null
           created_at?: string
@@ -643,6 +652,7 @@ export type Database = {
       reactions: {
         Row: {
           created_at: string
+          emoji: string | null
           id: string
           post_id: string
           type: string
@@ -650,6 +660,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          emoji?: string | null
           id?: string
           post_id: string
           type: string
@@ -657,6 +668,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          emoji?: string | null
           id?: string
           post_id?: string
           type?: string

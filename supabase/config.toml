@@ -11,3 +11,6 @@ verify_jwt = true
 
 [functions.create-stripe-product]
 verify_jwt = true
+
+[functions.check-handle]
+verify_jwt = false

@@ -9,17 +9,20 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Upload } from "lucide-react";
+import { ArrowLeft, Upload, Check, X, Loader2 } from "lucide-react";
+import { useHandleCheck } from "@/hooks/useHandleCheck";
 
 export default function CreateCommunity() {
   const navigate = useNavigate();
   const { toast } = useToast();
-    const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [isPrivate, setIsPrivate] = useState(false);
   const [pricingType, setPricingType] = useState<"free" | "one_time" | "lifetime" | "recurring_monthly">("free");
   const [price, setPrice] = useState("");
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string>("");
+  const [handle, setHandle] = useState("");
+  const handleCheckResult = useHandleCheck(handle);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -47,6 +50,27 @@ export default function CreateCommunity() {
         toast({
           title: "Image Required",
           description: "Please upload a community image",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // Validate handle
+      if (!handle || handle.length < 3) {
+        toast({
+          title: "Handle Required",
+          description: "Please enter a handle (at least 3 characters)",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      if (!handleCheckResult.available) {
+        toast({
+          title: "Handle Unavailable",
+          description: handleCheckResult.error || "This handle is already taken",
           variant: "destructive",
         });
         setIsLoading(false);
@@ -120,6 +144,7 @@ export default function CreateCommunity() {
         .from("communities")
         .insert({
           name,
+          handle: handle.trim().toLowerCase(),
           description,
           owner_id: user.id,
           is_private: isPrivate,
@@ -223,6 +248,47 @@ export default function CreateCommunity() {
                 maxLength={100}
                 className="h-11"
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="handle" className="text-sm font-medium">Community Handle</Label>
+              <div className="relative">
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                  @
+                </div>
+                <Input
+                  id="handle"
+                  name="handle"
+                  placeholder="your-community-handle"
+                  required
+                  value={handle}
+                  onChange={(e) => setHandle(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''))}
+                  maxLength={30}
+                  className="h-11 pl-7 pr-10"
+                />
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  {handleCheckResult.checking && (
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  )}
+                  {!handleCheckResult.checking && handle.length >= 3 && handleCheckResult.available && (
+                    <Check className="h-4 w-4 text-green-500" />
+                  )}
+                  {!handleCheckResult.checking && handle.length >= 3 && !handleCheckResult.available && (
+                    <X className="h-4 w-4 text-red-500" />
+                  )}
+                </div>
+              </div>
+              {handleCheckResult.message && handle.length >= 3 && (
+                <p className={`text-xs ${handleCheckResult.available ? 'text-green-600' : 'text-red-600'}`}>
+                  {handleCheckResult.message}
+                </p>
+              )}
+              {handleCheckResult.error && handle.length >= 3 && (
+                <p className="text-xs text-red-600">{handleCheckResult.error}</p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Your unique handle (3-30 characters, lowercase letters, numbers, dashes, underscores)
+              </p>
             </div>
 
             <div className="space-y-2">

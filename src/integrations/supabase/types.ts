@@ -109,6 +109,7 @@ export type Database = {
           avatar_url: string | null
           created_at: string
           description: string | null
+          handle: string | null
           id: string
           invite_code: string | null
           is_private: boolean
@@ -129,6 +130,7 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           description?: string | null
+          handle?: string | null
           id?: string
           invite_code?: string | null
           is_private?: boolean
@@ -149,6 +151,7 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           description?: string | null
+          handle?: string | null
           id?: string
           invite_code?: string | null
           is_private?: boolean

@@ -515,23 +515,27 @@ export default function Community() {
                       </span>
                     </div>
                     <CollapsibleContent className="space-y-2">
-                      <div className="bg-card rounded-2xl px-3 py-2 border border-border/40 shadow-sm max-w-[85%] md:max-w-[75%]">
+                      {/* Text Content */}
+                      <div className="inline-block bg-card rounded-2xl px-3 py-2 border border-border/40 shadow-sm max-w-[85%] md:max-w-[75%]">
                         <p className="text-base text-card-foreground whitespace-pre-wrap break-words leading-relaxed">{post.content}</p>
-                        {post.media_urls && post.media_urls.length > 0 && (
-                          <div className="mt-2 grid gap-2">
-                            {post.media_urls.map((url: string, idx: number) => (
+                      </div>
+                      
+                      {/* Media Content */}
+                      {post.media_urls && post.media_urls.length > 0 && (
+                        <div className="space-y-2">
+                          {post.media_urls.map((url: string, idx: number) => (
+                            <div key={idx} className="inline-block bg-card rounded-2xl p-2 border border-border/40 shadow-sm">
                               <img
-                                key={idx}
                                 src={url}
                                 alt="Post media"
-                                className="rounded-xl max-w-full h-auto max-h-80 object-cover border border-border/30"
+                                className="rounded-xl max-h-80 object-cover"
                                 loading="lazy"
                                 decoding="async"
                               />
-                            ))}
-                          </div>
-                        )}
-                      </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                       <div className="flex items-center gap-2 mt-2">
                         {/* Like Button */}
                         <button

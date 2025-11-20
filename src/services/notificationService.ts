@@ -9,28 +9,50 @@ export const initNotificationSound = async () => {
   try {
     audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
     
-    // Create a simple pleasant notification sound
+    // Create a longer, more pleasant notification sound
     const sampleRate = audioContext.sampleRate;
-    const duration = 0.15; // 150ms
+    const duration = 0.5; // 500ms - longer sound
     const bufferSize = sampleRate * duration;
     
     audioBuffer = audioContext.createBuffer(1, bufferSize, sampleRate);
     const channelData = audioBuffer.getChannelData(0);
     
-    // Generate a pleasant two-tone notification sound
+    // Generate a smooth three-tone ascending notification sound
     for (let i = 0; i < bufferSize; i++) {
       const t = i / sampleRate;
-      const frequency1 = 800; // First tone
-      const frequency2 = 600; // Second tone
+      const progress = i / bufferSize;
       
-      // Envelope to make it fade in and out
-      const envelope = Math.sin((i / bufferSize) * Math.PI);
+      // Three ascending tones
+      const frequency1 = 523; // C5
+      const frequency2 = 659; // E5
+      const frequency3 = 784; // G5
       
-      if (i < bufferSize / 2) {
-        channelData[i] = Math.sin(2 * Math.PI * frequency1 * t) * envelope * 0.3;
-      } else {
-        channelData[i] = Math.sin(2 * Math.PI * frequency2 * t) * envelope * 0.3;
+      // Smooth envelope
+      const attack = 0.1;
+      const release = 0.3;
+      let envelope = 1;
+      
+      if (progress < attack) {
+        envelope = progress / attack;
+      } else if (progress > 1 - release) {
+        envelope = (1 - progress) / release;
       }
+      
+      // Mix the three tones with smooth transitions
+      let signal = 0;
+      if (progress < 0.33) {
+        signal = Math.sin(2 * Math.PI * frequency1 * t);
+      } else if (progress < 0.66) {
+        const fade = (progress - 0.33) / 0.33;
+        signal = Math.sin(2 * Math.PI * frequency1 * t) * (1 - fade) + 
+                Math.sin(2 * Math.PI * frequency2 * t) * fade;
+      } else {
+        const fade = (progress - 0.66) / 0.34;
+        signal = Math.sin(2 * Math.PI * frequency2 * t) * (1 - fade) + 
+                Math.sin(2 * Math.PI * frequency3 * t) * fade;
+      }
+      
+      channelData[i] = signal * envelope * 0.25;
     }
   } catch (error) {
     console.error("Failed to initialize notification sound:", error);

@@ -1,10 +1,84 @@
+import { useState } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { MessageCircle, Mail, Book } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 export default function Help() {
+  const { toast } = useToast();
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [subject, setSubject] = useState("");
+  const [message, setMessage] = useState("");
+
+  const { data: profile } = useQuery({
+    queryKey: ["profile"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+      const { data } = await supabase.from("profiles").select("*").eq("id", user.id).single();
+      return data;
+    },
+  });
+
+  const { data: user } = useQuery({
+    queryKey: ["user"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      return user;
+    },
+  });
+
+  const handleSendHelp = async () => {
+    if (!subject.trim() || !message.trim()) {
+      toast({
+        title: "Error",
+        description: "Please fill in all fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-help-email", {
+        body: {
+          subject,
+          message,
+          userEmail: user?.email || "anonymous@user.com",
+          userName: profile?.username || "Anonymous User",
+        },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success!",
+        description: "Your message has been sent. We'll get back to you soon!",
+      });
+      
+      setSubject("");
+      setMessage("");
+      setOpen(false);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send message",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar />
@@ -20,7 +94,56 @@ export default function Help() {
           <div className="max-w-5xl space-y-6">
             {/* Contact Options */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card className="border-2 hover:shadow-lg transition-all cursor-pointer">
+              <Dialog open={open} onOpenChange={setOpen}>
+                <DialogTrigger asChild>
+                  <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover-lift">
+                    <CardHeader className="text-center">
+                      <Mail className="h-8 w-8 mx-auto mb-2 text-primary" />
+                      <CardTitle className="text-lg">Contact Support</CardTitle>
+                      <CardDescription>Send us an email</CardDescription>
+                    </CardHeader>
+                  </Card>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Contact Support</DialogTitle>
+                    <DialogDescription>
+                      Send your message to buyverly@gmail.com
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="subject">Subject</Label>
+                      <Input
+                        id="subject"
+                        value={subject}
+                        onChange={(e) => setSubject(e.target.value)}
+                        placeholder="What do you need help with?"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="message">Message</Label>
+                      <Textarea
+                        id="message"
+                        value={message}
+                        onChange={(e) => setMessage(e.target.value)}
+                        placeholder="Describe your issue or question..."
+                        rows={6}
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleSendHelp} disabled={loading}>
+                      {loading ? "Sending..." : "Send Message"}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+
+              <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover-lift">
                 <CardHeader className="text-center">
                   <MessageCircle className="h-8 w-8 mx-auto mb-2 text-primary" />
                   <CardTitle className="text-lg">Live Chat</CardTitle>
@@ -28,15 +151,7 @@ export default function Help() {
                 </CardHeader>
               </Card>
 
-              <Card className="border-2 hover:shadow-lg transition-all cursor-pointer">
-                <CardHeader className="text-center">
-                  <Mail className="h-8 w-8 mx-auto mb-2 text-primary" />
-                  <CardTitle className="text-lg">Email Support</CardTitle>
-                  <CardDescription>Get help via email</CardDescription>
-                </CardHeader>
-              </Card>
-
-              <Card className="border-2 hover:shadow-lg transition-all cursor-pointer">
+              <Card className="border-2 hover:shadow-lg transition-all cursor-pointer hover-lift">
                 <CardHeader className="text-center">
                   <Book className="h-8 w-8 mx-auto mb-2 text-primary" />
                   <CardTitle className="text-lg">Documentation</CardTitle>

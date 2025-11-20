@@ -1,0 +1,2 @@
+-- Update supabase config to include send-help-email function
+-- This is handled automatically by the config.toml file

@@ -10,10 +10,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { EmojiReactionPicker } from "@/components/EmojiReactionPicker";
-import { ReactionAnimation } from "@/components/ReactionAnimation";
 import { MediaPreview } from "@/components/MediaPreview";
 import { EmojiType } from "@/services/notificationService";
-import { 
+import {
   ArrowLeft, Users, Send, Image as ImageIcon, CheckCircle2, Search, X,
   ChevronDown, ChevronUp, FileText, Video, Music, Link as LinkIcon, MessageCircle, MoreVertical, Heart
 } from "lucide-react";
@@ -31,7 +30,7 @@ export default function Community() {
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [animatingEmoji, setAnimatingEmoji] = useState<EmojiType | null>(null);
+  const [animatingPost, setAnimatingPost] = useState<string | null>(null);
   const [showGroupInfo, setShowGroupInfo] = useState(true);
   const [filesExpanded, setFilesExpanded] = useState(true);
   const [showComments, setShowComments] = useState<{ [key: string]: boolean }>({});
@@ -289,7 +288,8 @@ export default function Community() {
           type: "like",
         });
         if (error) throw error;
-        setAnimatingEmoji(emoji);
+        setAnimatingPost(postId);
+        setTimeout(() => setAnimatingPost(null), 600);
       }
     },
     onSuccess: () => {
@@ -377,13 +377,6 @@ export default function Community() {
 
   return (
     <AppLayout>
-      {animatingEmoji && (
-        <ReactionAnimation 
-          emoji={animatingEmoji} 
-          onComplete={() => setAnimatingEmoji(null)} 
-        />
-      )}
-      
       <div className="flex h-screen">
         {/* Main Chat Area */}
         <div className={`flex flex-col transition-all ${showGroupInfo ? 'flex-1' : 'w-full'}`}>
@@ -465,14 +458,19 @@ export default function Community() {
                       {/* Like Button */}
                       <button
                         onClick={() => toggleReactionMutation.mutate({ postId: post.id, emoji: "❤️" })}
-                        className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all hover:scale-105 ${
+                        className={`relative flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all overflow-hidden ${
                           userReaction?.emoji === "❤️" 
                             ? "bg-primary/15 text-primary border border-primary/30" 
                             : "bg-muted/60 hover:bg-muted text-muted-foreground border border-border/30"
-                        }`}
+                        } ${animatingPost === post.id ? 'animate-bounce-scale' : ''}`}
                       >
-                        <Heart className={`h-3.5 w-3.5 ${userReaction?.emoji === "❤️" ? "fill-primary" : ""}`} />
+                        <Heart className={`h-3.5 w-3.5 transition-all ${userReaction?.emoji === "❤️" ? "fill-primary scale-110" : ""}`} />
                         <span>{post.reactions?.filter((r: any) => r.emoji === "❤️").length || 0}</span>
+                        {animatingPost === post.id && (
+                          <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <Heart className="h-5 w-5 text-primary fill-primary animate-reaction-burst" />
+                          </span>
+                        )}
                       </button>
                       
                       {/* Comment Button - Always show */}

@@ -660,24 +660,6 @@ export default function Community() {
                       <ChevronDown className="h-4 w-4" />
                     </div>
                   )}
-                  
-                  {/* Shared Links */}
-                  <div className="flex items-center justify-between text-sm py-2 hover:bg-accent/30 rounded-lg px-2 cursor-pointer">
-                    <div className="flex items-center gap-2">
-                      <LinkIcon className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">45 shared links</span>
-                    </div>
-                    <ChevronDown className="h-4 w-4" />
-                  </div>
-                  
-                  {/* Voice Messages */}
-                  <div className="flex items-center justify-between text-sm py-2 hover:bg-accent/30 rounded-lg px-2 cursor-pointer">
-                    <div className="flex items-center gap-2">
-                      <Mic className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">2,589 voice messages</span>
-                    </div>
-                    <ChevronDown className="h-4 w-4" />
-                  </div>
                 </CollapsibleContent>
               </Collapsible>
 

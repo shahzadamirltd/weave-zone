@@ -15,7 +15,7 @@ import { MediaPreview } from "@/components/MediaPreview";
 import { EmojiType } from "@/services/notificationService";
 import { 
   ArrowLeft, Users, Send, Image as ImageIcon, CheckCircle2, Search, X,
-  ChevronDown, ChevronUp, FileText, Video, Music, Link as LinkIcon, MessageCircle, MoreVertical
+  ChevronDown, ChevronUp, FileText, Video, Music, Link as LinkIcon, MessageCircle, MoreVertical, Heart
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -444,7 +444,7 @@ export default function Community() {
                         {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
                       </span>
                     </div>
-                    <div className="bg-card rounded-2xl px-4 py-3 border border-border/50 shadow-sm">
+                    <div className="bg-accent/50 rounded-2xl px-4 py-2 border border-border/30 shadow-sm">
                       <p className="text-card-foreground whitespace-pre-wrap break-words">{post.content}</p>
                       {post.media_urls && post.media_urls.length > 0 && (
                         <div className="mt-3 grid gap-2">
@@ -460,27 +460,32 @@ export default function Community() {
                         </div>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 mt-2">
-                      <EmojiReactionPicker
-                        onSelect={(emoji) => toggleReactionMutation.mutate({ postId: post.id, emoji })}
-                        currentEmoji={userReaction?.emoji}
-                      />
-                      <div className="flex gap-1">
-                        {Object.entries(
-                          post.reactions?.reduce((acc: any, r: any) => {
-                            acc[r.emoji] = (acc[r.emoji] || 0) + 1;
-                            return acc;
-                          }, {}) || {}
-                        ).map(([emoji, count]) => (
-                          <button
-                            key={emoji}
-                            className="px-2 py-1 rounded-full bg-accent/50 hover:bg-accent text-sm transition-all hover:scale-110 border border-border/30"
-                            onClick={() => toggleReactionMutation.mutate({ postId: post.id, emoji: emoji as EmojiType })}
-                          >
-                            {emoji} {String(count)}
-                          </button>
-                        ))}
-                      </div>
+                    <div className="flex items-center gap-3 mt-2">
+                      {/* Like Button */}
+                      <button
+                        onClick={() => toggleReactionMutation.mutate({ postId: post.id, emoji: "❤️" })}
+                        className={`flex items-center gap-1 px-3 py-1.5 rounded-full transition-all hover:scale-105 animate-scale-in ${
+                          userReaction?.emoji === "❤️" 
+                            ? "bg-primary/20 text-primary border border-primary/30" 
+                            : "bg-accent/50 hover:bg-accent text-muted-foreground border border-border/30"
+                        }`}
+                      >
+                        <Heart className={`h-4 w-4 ${userReaction?.emoji === "❤️" ? "fill-primary" : ""}`} />
+                        <span className="text-sm font-medium">
+                          {post.reactions?.filter((r: any) => r.emoji === "❤️").length || 0}
+                        </span>
+                      </button>
+                      
+                      {/* Comment Button */}
+                      {postComments.length > 0 && (
+                        <button
+                          onClick={() => setShowComments({ ...showComments, [post.id]: !showComments[post.id] })}
+                          className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-accent/50 hover:bg-accent text-muted-foreground border border-border/30 transition-all hover:scale-105"
+                        >
+                          <MessageCircle className="h-4 w-4" />
+                          <span className="text-sm font-medium">{postComments.length}</span>
+                        </button>
+                      )}
                     </div>
 
                     {/* Comments */}
@@ -493,18 +498,6 @@ export default function Community() {
                           </div>
                         ))}
                       </div>
-                    )}
-                    
-                    {postComments.length > 0 && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setShowComments({ ...showComments, [post.id]: !showComments[post.id] })}
-                        className="text-xs text-muted-foreground hover:text-card-foreground mt-2"
-                      >
-                        <MessageCircle className="h-4 w-4 mr-1" />
-                        {showComments[post.id] ? 'Hide' : 'Show'} {postComments.length} {postComments.length === 1 ? 'comment' : 'comments'}
-                      </Button>
                     )}
 
                     {/* Comment Input */}
@@ -579,11 +572,6 @@ export default function Community() {
                   )}
                 </Button>
               </div>
-            </div>
-          )}
-          {!isOwner && (
-            <div className="border-t border-border/30 bg-card/98 backdrop-blur-md p-4 text-center">
-              <p className="text-sm text-muted-foreground">Only the creator can send messages in this community</p>
             </div>
           )}
         </div>

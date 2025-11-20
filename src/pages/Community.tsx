@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { EmojiReactionPicker } from "@/components/EmojiReactionPicker";
 import { MediaPreview } from "@/components/MediaPreview";
 import { VoiceRecorder } from "@/components/VoiceRecorder";
+import { AudioPlayer } from "@/components/AudioPlayer";
 import { LiveStreamBanner } from "@/components/community/LiveStreamBanner";
 import { CommunityLiveStream } from "@/components/community/CommunityLiveStream";
 import { EmojiType } from "@/services/notificationService";
@@ -297,39 +298,70 @@ export default function Community() {
     mutationFn: async (audioBlob: Blob) => {
       if (!profile) throw new Error("Not authenticated");
       
-      setUploading(true);
-      const fileName = `${profile.id}/${Date.now()}_voice.webm`;
-      
+      const fileName = `voice-${Date.now()}.webm`;
+      const filePath = `${profile.id}/${fileName}`;
+
+      // Create optimistic post immediately
+      const tempId = `temp-${Date.now()}`;
+      const optimisticPost = {
+        id: tempId,
+        content: "🎤 Voice message",
+        media_urls: null,
+        created_at: new Date().toISOString(),
+        author_id: profile.id,
+        community_id: id!,
+        profiles: {
+          id: profile.id,
+          username: profile.username || 'User',
+          avatar_url: null,
+          bio: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+      };
+
+      // Return optimistic data immediately
+      queryClient.setQueryData(['posts', id], (old: any) => {
+        if (!old?.pages) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page: any, i: number) => 
+            i === 0 ? { ...page, data: [optimisticPost, ...page.data] } : page
+          ),
+        };
+      });
+
+      // Upload in background
       const { error: uploadError } = await supabase.storage
-        .from('community-media')
-        .upload(fileName, audioBlob, {
-          contentType: 'audio/webm',
-          cacheControl: '3600',
-          upsert: false
-        });
+        .from("community-media")
+        .upload(filePath, audioBlob);
 
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage
-        .from('community-media')
-        .getPublicUrl(fileName);
-      
-      const { error } = await supabase.from("posts").insert({
-        community_id: id,
-        author_id: profile.id,
-        content: "🎤 Voice message",
-        media_urls: [publicUrl],
+        .from("community-media")
+        .getPublicUrl(filePath);
+
+      const { error: postError } = await supabase
+        .from("posts")
+        .insert({
+          content: "🎤 Voice message",
+          media_urls: [publicUrl],
+          author_id: profile.id,
+          community_id: id!,
+        });
+
+      if (postError) throw postError;
+
+      // Refresh to get actual post
+      await queryClient.invalidateQueries({ queryKey: ['posts', id] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to send voice message",
+        description: error.message,
+        variant: "destructive",
       });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      setUploading(false);
-      queryClient.invalidateQueries({ queryKey: ["posts", id] });
-      toast({ title: "Success", description: "Voice message sent" });
-    },
-    onError: (error: any) => {
-      setUploading(false);
-      toast({ title: "Error", description: error.message, variant: "destructive" });
     },
   });
 
@@ -708,17 +740,38 @@ export default function Community() {
                       {/* Media Content */}
                       {post.media_urls && post.media_urls.length > 0 && (
                         <div className="space-y-2">
-                          {post.media_urls.map((url: string, idx: number) => (
-                            <div key={idx} className="inline-block bg-card rounded-2xl p-2 border border-border/40 shadow-sm">
-                              <img
-                                src={url}
-                                alt="Post media"
-                                className="rounded-xl max-h-80 object-cover"
-                                loading="lazy"
-                                decoding="async"
-                              />
-                            </div>
-                          ))}
+                          {post.media_urls.map((url: string, idx: number) => {
+                            const isAudio = url.includes('voice-') || url.endsWith('.webm') || url.endsWith('.mp3') || url.endsWith('.wav');
+                            const isVideo = url.endsWith('.mp4') || url.endsWith('.mov');
+                            
+                            if (isAudio) {
+                              return <AudioPlayer key={idx} audioUrl={url} />;
+                            }
+                            
+                            if (isVideo) {
+                              return (
+                                <div key={idx} className="inline-block bg-card rounded-2xl p-2 border border-border/40 shadow-sm max-w-md">
+                                  <video
+                                    src={url}
+                                    controls
+                                    className="rounded-xl w-full max-h-80 object-cover"
+                                  />
+                                </div>
+                              );
+                            }
+                            
+                            return (
+                              <div key={idx} className="inline-block bg-card rounded-2xl p-2 border border-border/40 shadow-sm">
+                                <img
+                                  src={url}
+                                  alt="Post media"
+                                  className="rounded-xl max-h-80 object-cover"
+                                  loading="lazy"
+                                  decoding="async"
+                                />
+                              </div>
+                            );
+                          })}
                         </div>
                       )}
                       <div className="flex items-center gap-2 mt-2">

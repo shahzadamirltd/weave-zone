@@ -439,53 +439,50 @@ export default function Community() {
                   </Avatar>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-baseline gap-2 mb-1">
-                      <span className="font-semibold text-card-foreground">{post.profiles?.username}</span>
+                      <span className="font-medium text-sm text-card-foreground">{post.profiles?.username}</span>
                       <span className="text-xs text-muted-foreground">
                         {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
                       </span>
                     </div>
-                    <div className="bg-accent/50 rounded-2xl px-4 py-2 border border-border/30 shadow-sm">
-                      <p className="text-card-foreground whitespace-pre-wrap break-words">{post.content}</p>
+                    <div className="bg-card rounded-2xl px-3 py-2 border border-border/40 shadow-sm max-w-[85%] md:max-w-[75%]">
+                      <p className="text-sm text-card-foreground whitespace-pre-wrap break-words leading-relaxed">{post.content}</p>
                       {post.media_urls && post.media_urls.length > 0 && (
-                        <div className="mt-3 grid gap-2">
+                        <div className="mt-2 grid gap-2">
                           {post.media_urls.map((url: string, idx: number) => (
                             <img
                               key={idx}
                               src={url}
                               alt="Post media"
-                              className="rounded-lg max-w-full h-auto max-h-96 object-cover border border-border/30"
+                              className="rounded-xl max-w-full h-auto max-h-80 object-cover border border-border/30"
                               loading="lazy"
+                              decoding="async"
                             />
                           ))}
                         </div>
                       )}
                     </div>
-                    <div className="flex items-center gap-3 mt-2">
+                    <div className="flex items-center gap-2 mt-2">
                       {/* Like Button */}
                       <button
                         onClick={() => toggleReactionMutation.mutate({ postId: post.id, emoji: "❤️" })}
-                        className={`flex items-center gap-1 px-3 py-1.5 rounded-full transition-all hover:scale-105 animate-scale-in ${
+                        className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all hover:scale-105 ${
                           userReaction?.emoji === "❤️" 
-                            ? "bg-primary/20 text-primary border border-primary/30" 
-                            : "bg-accent/50 hover:bg-accent text-muted-foreground border border-border/30"
+                            ? "bg-primary/15 text-primary border border-primary/30" 
+                            : "bg-muted/60 hover:bg-muted text-muted-foreground border border-border/30"
                         }`}
                       >
-                        <Heart className={`h-4 w-4 ${userReaction?.emoji === "❤️" ? "fill-primary" : ""}`} />
-                        <span className="text-sm font-medium">
-                          {post.reactions?.filter((r: any) => r.emoji === "❤️").length || 0}
-                        </span>
+                        <Heart className={`h-3.5 w-3.5 ${userReaction?.emoji === "❤️" ? "fill-primary" : ""}`} />
+                        <span>{post.reactions?.filter((r: any) => r.emoji === "❤️").length || 0}</span>
                       </button>
                       
-                      {/* Comment Button */}
-                      {postComments.length > 0 && (
-                        <button
-                          onClick={() => setShowComments({ ...showComments, [post.id]: !showComments[post.id] })}
-                          className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-accent/50 hover:bg-accent text-muted-foreground border border-border/30 transition-all hover:scale-105"
-                        >
-                          <MessageCircle className="h-4 w-4" />
-                          <span className="text-sm font-medium">{postComments.length}</span>
-                        </button>
-                      )}
+                      {/* Comment Button - Always show */}
+                      <button
+                        onClick={() => setShowComments({ ...showComments, [post.id]: !showComments[post.id] })}
+                        className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-muted/60 hover:bg-muted text-muted-foreground border border-border/30 transition-all hover:scale-105"
+                      >
+                        <MessageCircle className="h-3.5 w-3.5" />
+                        <span>{postComments.length}</span>
+                      </button>
                     </div>
 
                     {/* Comments */}
@@ -500,23 +497,25 @@ export default function Community() {
                       </div>
                     )}
 
-                    {/* Comment Input */}
-                    <div className="mt-2 flex gap-2">
-                      <Input
-                        value={commentContent[post.id] || ""}
-                        onChange={(e) => setCommentContent({ ...commentContent, [post.id]: e.target.value })}
-                        placeholder="Reply..."
-                        className="text-sm h-8 bg-accent/30 border-border/50"
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" && commentContent[post.id]?.trim()) {
-                            createCommentMutation.mutate({
-                              postId: post.id,
-                              content: commentContent[post.id],
-                            });
-                          }
-                        }}
-                      />
-                    </div>
+                    {/* Comment Input - Only show when comments section is open */}
+                    {showComments[post.id] && (
+                      <div className="mt-2 flex gap-2">
+                        <Input
+                          value={commentContent[post.id] || ""}
+                          onChange={(e) => setCommentContent({ ...commentContent, [post.id]: e.target.value })}
+                          placeholder="Write a reply..."
+                          className="text-sm h-9 bg-card border-border/50 rounded-full px-4"
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" && commentContent[post.id]?.trim()) {
+                              createCommentMutation.mutate({
+                                postId: post.id,
+                                content: commentContent[post.id],
+                              });
+                            }
+                          }}
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
               );
@@ -526,9 +525,9 @@ export default function Community() {
 
           {/* Input Area - Only for Creator */}
           {isOwner && (
-            <div className="border-t border-border/30 bg-card/98 backdrop-blur-md p-4 shadow-card">
+            <div className="border-t border-border/30 bg-card/98 backdrop-blur-md p-3 shadow-card">
               <MediaPreview files={mediaFiles} onRemove={handleRemoveFile} />
-              <div className="flex gap-2 items-end">
+              <div className="flex gap-2 items-center">
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -542,35 +541,39 @@ export default function Community() {
                   size="icon"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploading}
-                  className="hover:bg-accent rounded-full"
+                  className="hover:bg-accent rounded-full flex-shrink-0 h-9 w-9"
                 >
-                  <ImageIcon className="h-5 w-5" />
+                  <ImageIcon className="h-4 w-4" />
                 </Button>
-                <Textarea
-                  value={postContent}
-                  onChange={(e) => setPostContent(e.target.value)}
-                  placeholder="Your message"
-                  className="resize-none bg-accent/30 border-border/50 min-h-[44px] max-h-32 rounded-2xl"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      if (postContent.trim() || mediaFiles.length > 0) {
-                        createPostMutation.mutate();
+                <div className="flex-1 bg-muted/40 rounded-full px-4 py-1 border border-border/40 flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={postContent}
+                    onChange={(e) => setPostContent(e.target.value)}
+                    placeholder="Type a message..."
+                    className="flex-1 bg-transparent text-sm focus:outline-none"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        if (postContent.trim() || mediaFiles.length > 0) {
+                          createPostMutation.mutate();
+                        }
                       }
-                    }
-                  }}
-                />
-                <Button
-                  onClick={() => createPostMutation.mutate()}
-                  disabled={(!postContent.trim() && mediaFiles.length === 0) || uploading}
-                  className="bg-primary hover:bg-primary/90 shadow-sm rounded-full"
-                >
-                  {uploading ? (
-                    <span className="animate-pulse">...</span>
-                  ) : (
-                    <Send className="h-5 w-5" />
-                  )}
-                </Button>
+                    }}
+                  />
+                  <Button
+                    onClick={() => createPostMutation.mutate()}
+                    disabled={(!postContent.trim() && mediaFiles.length === 0) || uploading}
+                    size="icon"
+                    className="bg-primary hover:bg-primary/90 shadow-sm rounded-full h-8 w-8 flex-shrink-0"
+                  >
+                    {uploading ? (
+                      <span className="animate-pulse text-xs">...</span>
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
               </div>
             </div>
           )}

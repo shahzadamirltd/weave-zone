@@ -16,9 +16,9 @@ export function Sidebar() {
   const navigate = useNavigate();
 
   return (
-    <aside className="fixed left-0 top-0 h-full w-64 bg-card border-r border-border/10 flex flex-col">
+    <aside className="fixed left-0 top-0 h-full w-64 flex flex-col" style={{ backgroundColor: 'hsl(var(--sidebar-background))' }}>
       <div className="p-6 flex items-center justify-between">
-        <h2 className="text-xl font-bold">Communities</h2>
+        <h2 className="text-xl font-bold" style={{ color: 'hsl(var(--sidebar-foreground))' }}>Communities</h2>
         <div className="flex items-center gap-1">
           <NotificationBell />
           <ThemeToggle />
@@ -32,11 +32,16 @@ export function Sidebar() {
             to={item.to}
             className={({ isActive }) =>
               cn(
-                "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all",
+                "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all",
                 isActive
-                  ? "bg-accent text-foreground"
-                  : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+                  ? "text-white"
+                  : "hover:bg-sidebar-accent"
               )
+            }
+            style={({ isActive }: any) => 
+              isActive 
+                ? { backgroundColor: 'hsl(var(--sidebar-accent))', color: 'hsl(var(--sidebar-accent-foreground))' } 
+                : { color: 'hsl(var(--sidebar-foreground) / 0.7)' }
             }
           >
             <item.icon className="h-5 w-5" />
@@ -48,7 +53,7 @@ export function Sidebar() {
       <div className="p-4">
         <Button 
           onClick={() => navigate("/create-community")}
-          className="w-full rounded-xl py-6"
+          className="w-full rounded-xl py-6 bg-primary hover:bg-primary/90"
         >
           <Plus className="h-5 w-5 mr-2" />
           Create Community

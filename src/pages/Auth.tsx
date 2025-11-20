@@ -137,13 +137,13 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-6">
+    <div className="min-h-screen flex items-center justify-center p-6">
       <div className="w-full max-w-md space-y-8">
         <div className="text-center space-y-3">
-          <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-foreground mb-4">
-            <Users className="h-7 w-7 text-background" />
+          <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/20 mb-4">
+            <Users className="h-7 w-7 text-primary" />
           </div>
-          <h1 className="text-4xl font-semibold tracking-tight">
+          <h1 className="text-4xl font-semibold tracking-tight text-card-foreground">
             Communities
           </h1>
           <p className="text-muted-foreground text-sm">
@@ -151,11 +151,11 @@ export default function Auth() {
           </p>
         </div>
 
-        <div className="border border-border rounded-2xl p-8 bg-card">
+        <div className="border border-border/30 rounded-2xl p-8 bg-card shadow-elevated">
           <Tabs defaultValue="signin" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 h-11 bg-muted/30 p-1">
-              <TabsTrigger value="signin" className="data-[state=active]:bg-background">Sign In</TabsTrigger>
-              <TabsTrigger value="signup" className="data-[state=active]:bg-background">Sign Up</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 h-11 bg-accent/30 p-1">
+              <TabsTrigger value="signin" className="data-[state=active]:bg-card data-[state=active]:text-card-foreground rounded-lg">Sign In</TabsTrigger>
+              <TabsTrigger value="signup" className="data-[state=active]:bg-card data-[state=active]:text-card-foreground rounded-lg">Sign Up</TabsTrigger>
             </TabsList>
 
             <TabsContent value="signin" className="mt-6">

@@ -81,8 +81,9 @@ export default {
           "100%": { opacity: "1", transform: "scale(1)" }
         },
         "bounce-scale": {
-          "0%, 100%": { transform: "scale(1)" },
-          "50%": { transform: "scale(1.5)" }
+          "0%": { transform: "scale(1)" },
+          "50%": { transform: "scale(1.3)" },
+          "100%": { transform: "scale(1)" }
         },
         "reaction-burst": {
           "0%": { opacity: "0", transform: "scale(0.3) translateY(0)" },
@@ -100,7 +101,7 @@ export default {
         "fade-in": "fade-in 0.5s ease-out",
         "slide-up": "slide-up 0.5s ease-out",
         "scale-in": "scale-in 0.3s ease-out",
-        "bounce-scale": "bounce-scale 0.6s ease-in-out",
+        "bounce-scale": "bounce-scale 0.15s ease-out",
         "reaction-burst": "reaction-burst 1.5s ease-out",
         "emoji-float": "emoji-float 2s ease-out forwards",
       },

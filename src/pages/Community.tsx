@@ -34,6 +34,7 @@ export default function Community() {
   const [showGroupInfo, setShowGroupInfo] = useState(true);
   const [filesExpanded, setFilesExpanded] = useState(true);
   const [showComments, setShowComments] = useState<{ [key: string]: boolean }>({});
+  const [collapsedPosts, setCollapsedPosts] = useState<{ [key: string]: boolean }>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -281,6 +282,10 @@ export default function Community() {
         const { error } = await supabase.from("reactions").delete().eq("id", existingReaction.id);
         if (error) throw error;
       } else {
+        // Instant animation
+        setAnimatingPost(postId);
+        setTimeout(() => setAnimatingPost(null), 150);
+        
         const { error } = await supabase.from("reactions").insert({
           post_id: postId,
           user_id: profile.id,
@@ -288,8 +293,6 @@ export default function Community() {
           type: "like",
         });
         if (error) throw error;
-        setAnimatingPost(postId);
-        setTimeout(() => setAnimatingPost(null), 600);
       }
     },
     onSuccess: () => {
@@ -410,11 +413,6 @@ export default function Community() {
                   )}
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" size="icon" onClick={() => setShowGroupInfo(!showGroupInfo)} className="hover:bg-accent rounded-full">
-                  <MoreVertical className="h-5 w-5" />
-                </Button>
-              </div>
             </div>
           </header>
 
@@ -423,99 +421,110 @@ export default function Community() {
             {filteredPosts?.map((post: any) => {
               const postComments = commentsData?.filter((c: any) => c.post_id === post.id) || [];
               const userReaction = post.reactions?.find((r: any) => r.user_id === profile?.id);
+              const isCollapsed = collapsedPosts[post.id];
 
               return (
-                <div key={post.id} className="flex gap-3 animate-slide-up">
+                <Collapsible
+                  key={post.id}
+                  open={!isCollapsed}
+                  onOpenChange={() => setCollapsedPosts({ ...collapsedPosts, [post.id]: !isCollapsed })}
+                  className="flex gap-3 animate-slide-up"
+                >
                   <Avatar className="h-10 w-10 flex-shrink-0">
                     <AvatarImage src={post.profiles?.avatar_url} />
                     <AvatarFallback className="bg-primary/10 text-primary">{post.profiles?.username?.[0]}</AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-baseline gap-2 mb-1">
-                      <span className="font-medium text-sm text-card-foreground">{post.profiles?.username}</span>
+                      <CollapsibleTrigger className="flex items-center gap-2 hover:opacity-70 transition-opacity">
+                        <span className="font-semibold text-base text-card-foreground">{post.profiles?.username}</span>
+                        {isCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+                      </CollapsibleTrigger>
                       <span className="text-xs text-muted-foreground">
                         {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
                       </span>
                     </div>
-                    <div className="bg-card rounded-2xl px-3 py-2 border border-border/40 shadow-sm max-w-[85%] md:max-w-[75%]">
-                      <p className="text-sm text-card-foreground whitespace-pre-wrap break-words leading-relaxed">{post.content}</p>
-                      {post.media_urls && post.media_urls.length > 0 && (
-                        <div className="mt-2 grid gap-2">
-                          {post.media_urls.map((url: string, idx: number) => (
-                            <img
-                              key={idx}
-                              src={url}
-                              alt="Post media"
-                              className="rounded-xl max-w-full h-auto max-h-80 object-cover border border-border/30"
-                              loading="lazy"
-                              decoding="async"
-                            />
+                    <CollapsibleContent className="space-y-2">
+                      <div className="bg-card rounded-2xl px-3 py-2 border border-border/40 shadow-sm max-w-[85%] md:max-w-[75%]">
+                        <p className="text-base text-card-foreground whitespace-pre-wrap break-words leading-relaxed">{post.content}</p>
+                        {post.media_urls && post.media_urls.length > 0 && (
+                          <div className="mt-2 grid gap-2">
+                            {post.media_urls.map((url: string, idx: number) => (
+                              <img
+                                key={idx}
+                                src={url}
+                                alt="Post media"
+                                className="rounded-xl max-w-full h-auto max-h-80 object-cover border border-border/30"
+                                loading="lazy"
+                                decoding="async"
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 mt-2">
+                        {/* Like Button */}
+                        <button
+                          onClick={() => toggleReactionMutation.mutate({ postId: post.id, emoji: "❤️" })}
+                          className={`relative flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium transition-all overflow-hidden ${
+                            userReaction?.emoji === "❤️" 
+                              ? "bg-primary/15 text-primary border border-primary/30" 
+                              : "bg-muted/60 hover:bg-muted text-muted-foreground border border-border/30"
+                          } ${animatingPost === post.id ? 'animate-bounce-scale' : ''}`}
+                        >
+                          <Heart className={`h-4 w-4 transition-all ${userReaction?.emoji === "❤️" ? "fill-primary scale-110" : ""}`} />
+                          <span>{post.reactions?.filter((r: any) => r.emoji === "❤️").length || 0}</span>
+                          {animatingPost === post.id && (
+                            <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                              <Heart className="h-6 w-6 text-primary fill-primary animate-reaction-burst" />
+                            </span>
+                          )}
+                        </button>
+                        
+                        {/* Comment Button - Always show */}
+                        <button
+                          onClick={() => setShowComments({ ...showComments, [post.id]: !showComments[post.id] })}
+                          className="flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium bg-muted/60 hover:bg-muted text-muted-foreground border border-border/30 transition-all hover:scale-105"
+                        >
+                          <MessageCircle className="h-4 w-4" />
+                          <span>{postComments.length}</span>
+                        </button>
+                      </div>
+
+                      {/* Comments */}
+                      {showComments[post.id] && postComments.length > 0 && (
+                        <div className="mt-3 space-y-2 ml-4 border-l-2 border-primary/20 pl-4 animate-fade-in">
+                          {postComments.map((comment: any) => (
+                            <div key={comment.id} className="text-base">
+                              <span className="font-semibold text-primary">{comment.profiles?.username}</span>
+                              <span className="ml-2 text-card-foreground/90">{comment.content}</span>
+                            </div>
                           ))}
                         </div>
                       )}
-                    </div>
-                    <div className="flex items-center gap-2 mt-2">
-                      {/* Like Button */}
-                      <button
-                        onClick={() => toggleReactionMutation.mutate({ postId: post.id, emoji: "❤️" })}
-                        className={`relative flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all overflow-hidden ${
-                          userReaction?.emoji === "❤️" 
-                            ? "bg-primary/15 text-primary border border-primary/30" 
-                            : "bg-muted/60 hover:bg-muted text-muted-foreground border border-border/30"
-                        } ${animatingPost === post.id ? 'animate-bounce-scale' : ''}`}
-                      >
-                        <Heart className={`h-3.5 w-3.5 transition-all ${userReaction?.emoji === "❤️" ? "fill-primary scale-110" : ""}`} />
-                        <span>{post.reactions?.filter((r: any) => r.emoji === "❤️").length || 0}</span>
-                        {animatingPost === post.id && (
-                          <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                            <Heart className="h-5 w-5 text-primary fill-primary animate-reaction-burst" />
-                          </span>
-                        )}
-                      </button>
-                      
-                      {/* Comment Button - Always show */}
-                      <button
-                        onClick={() => setShowComments({ ...showComments, [post.id]: !showComments[post.id] })}
-                        className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-muted/60 hover:bg-muted text-muted-foreground border border-border/30 transition-all hover:scale-105"
-                      >
-                        <MessageCircle className="h-3.5 w-3.5" />
-                        <span>{postComments.length}</span>
-                      </button>
-                    </div>
 
-                    {/* Comments */}
-                    {showComments[post.id] && postComments.length > 0 && (
-                      <div className="mt-3 space-y-2 ml-4 border-l-2 border-primary/20 pl-4 animate-fade-in">
-                        {postComments.map((comment: any) => (
-                          <div key={comment.id} className="text-sm">
-                            <span className="font-medium text-primary">{comment.profiles?.username}</span>
-                            <span className="ml-2 text-card-foreground/90">{comment.content}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Comment Input - Only show when comments section is open */}
-                    {showComments[post.id] && (
-                      <div className="mt-2 flex gap-2">
-                        <Input
-                          value={commentContent[post.id] || ""}
-                          onChange={(e) => setCommentContent({ ...commentContent, [post.id]: e.target.value })}
-                          placeholder="Write a reply..."
-                          className="text-sm h-9 bg-card border-border/50 rounded-full px-4"
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter" && commentContent[post.id]?.trim()) {
-                              createCommentMutation.mutate({
-                                postId: post.id,
-                                content: commentContent[post.id],
-                              });
-                            }
-                          }}
-                        />
-                      </div>
-                    )}
+                      {/* Comment Input - Only show when comments section is open */}
+                      {showComments[post.id] && (
+                        <div className="mt-2 flex gap-2">
+                          <Input
+                            value={commentContent[post.id] || ""}
+                            onChange={(e) => setCommentContent({ ...commentContent, [post.id]: e.target.value })}
+                            placeholder="Write a reply..."
+                            className="text-sm h-9 bg-card border-border/50 rounded-full px-4"
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" && commentContent[post.id]?.trim()) {
+                                createCommentMutation.mutate({
+                                  postId: post.id,
+                                  content: commentContent[post.id],
+                                });
+                              }
+                            }}
+                          />
+                        </div>
+                      )}
+                    </CollapsibleContent>
                   </div>
-                </div>
+                </Collapsible>
               );
             })}
             <div ref={messagesEndRef} />

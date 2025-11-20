@@ -55,11 +55,17 @@ export default function Dashboard() {
 
       const { data: memberships } = await supabase
         .from("memberships")
-        .select("community_id, communities!inner(*, memberships(count))")
+        .select(`
+          community_id,
+          communities (
+            *,
+            memberships (count)
+          )
+        `)
         .eq("user_id", profile.id)
         .neq("role", "owner");
 
-      return memberships?.map(m => m.communities).filter(Boolean) || [];
+      return memberships?.map(m => (m as any).communities).filter(Boolean) || [];
     },
     enabled: !!profile,
   });

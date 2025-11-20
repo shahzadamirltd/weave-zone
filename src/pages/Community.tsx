@@ -35,6 +35,7 @@ export default function Community() {
   const [filesExpanded, setFilesExpanded] = useState(true);
   const [showComments, setShowComments] = useState<{ [key: string]: boolean }>({});
   const [collapsedPosts, setCollapsedPosts] = useState<{ [key: string]: boolean }>({});
+  const [replyingTo, setReplyingTo] = useState<{ [key: string]: string | null }>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -256,18 +257,85 @@ export default function Community() {
   });
 
   const createCommentMutation = useMutation({
-    mutationFn: async ({ postId, content }: { postId: string; content: string }) => {
+    mutationFn: async ({ postId, content, parentId }: { postId: string; content: string; parentId?: string }) => {
       if (!profile) throw new Error("Not authenticated");
       const { error } = await supabase.from("comments").insert({
         post_id: postId,
         author_id: profile.id,
         content,
+        parent_id: parentId || null,
       });
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       setCommentContent({});
+      setReplyingTo({});
       queryClient.invalidateQueries({ queryKey: ["comments", id] });
+      toast({ title: "Success", description: "Comment posted" });
+    },
+  });
+
+  const deletePostMutation = useMutation({
+    mutationFn: async (postId: string) => {
+      const { error } = await supabase.from("posts").delete().eq("id", postId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["posts", id] });
+      toast({ title: "Success", description: "Post deleted" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const deleteCommentMutation = useMutation({
+    mutationFn: async (commentId: string) => {
+      const { error } = await supabase.from("comments").delete().eq("id", commentId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["comments", id] });
+      toast({ title: "Success", description: "Comment deleted" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const toggleCommentReactionMutation = useMutation({
+    mutationFn: async ({ commentId, emoji }: { commentId: string; emoji: string }) => {
+      if (!profile) throw new Error("Not authenticated");
+      
+      const { data: existingReaction } = await supabase
+        .from("comment_reactions")
+        .select("*")
+        .eq("comment_id", commentId)
+        .eq("user_id", profile.id)
+        .eq("emoji", emoji)
+        .maybeSingle();
+
+      if (existingReaction) {
+        const { error } = await supabase
+          .from("comment_reactions")
+          .delete()
+          .eq("id", existingReaction.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("comment_reactions").insert({
+          comment_id: commentId,
+          user_id: profile.id,
+          emoji,
+          type: "like",
+        });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["comments", id] });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     },
   });
 
@@ -366,6 +434,29 @@ export default function Community() {
   );
 
   const isOwner = community?.owner_id === profile?.id;
+
+  // Organize comments into tree structure (parent-child)
+  const organizeComments = (comments: any[]) => {
+    const commentMap = new Map();
+    const rootComments: any[] = [];
+
+    comments.forEach((comment) => {
+      commentMap.set(comment.id, { ...comment, replies: [] });
+    });
+
+    comments.forEach((comment) => {
+      if (comment.parent_id) {
+        const parent = commentMap.get(comment.parent_id);
+        if (parent) {
+          parent.replies.push(commentMap.get(comment.id));
+        }
+      } else {
+        rootComments.push(commentMap.get(comment.id));
+      }
+    });
+
+    return rootComments;
+  };
 
   // Calculate media stats
   const mediaStats = posts?.reduce((acc: any, post: any) => {
@@ -513,6 +604,21 @@ export default function Community() {
                       <span className="text-xs text-muted-foreground">
                         {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
                       </span>
+                      {(post.author_id === profile?.id || isOwner) && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 ml-auto hover:bg-destructive/10 hover:text-destructive"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (confirm("Delete this post?")) {
+                              deletePostMutation.mutate(post.id);
+                            }
+                          }}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      )}
                     </div>
                     <CollapsibleContent className="space-y-2">
                       {/* Text Content */}
@@ -566,12 +672,135 @@ export default function Community() {
                       </div>
 
                       {/* Comments */}
-                      {showComments[post.id] && postComments.length > 0 && (
-                        <div className="mt-3 space-y-2 ml-4 border-l-2 border-primary/20 pl-4 animate-fade-in">
-                          {postComments.map((comment: any) => (
-                            <div key={comment.id} className="text-base">
-                              <span className="font-semibold text-primary">{comment.profiles?.username}</span>
-                              <span className="ml-2 text-card-foreground/90">{comment.content}</span>
+                      {showComments[post.id] && (
+                        <div className="mt-3 space-y-3 animate-fade-in">
+                          {organizeComments(postComments).map((comment: any) => (
+                            <div key={comment.id} className="ml-4 border-l-2 border-primary/20 pl-4">
+                              <div className="space-y-2">
+                                <div className="flex items-start gap-2">
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-semibold text-primary text-sm">{comment.profiles?.username}</span>
+                                      <span className="text-xs text-muted-foreground">
+                                        {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
+                                      </span>
+                                      {comment.author_id === profile?.id && (
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-5 w-5 hover:bg-destructive/10 hover:text-destructive"
+                                          onClick={() => {
+                                            if (confirm("Delete this comment?")) {
+                                              deleteCommentMutation.mutate(comment.id);
+                                            }
+                                          }}
+                                        >
+                                          <X className="h-3 w-3" />
+                                        </Button>
+                                      )}
+                                    </div>
+                                    <p className="text-sm text-card-foreground/90 mt-1">{comment.content}</p>
+                                    <div className="flex items-center gap-3 mt-2">
+                                      <button
+                                        onClick={() => toggleCommentReactionMutation.mutate({ commentId: comment.id, emoji: "❤️" })}
+                                        className={`flex items-center gap-1 text-xs ${
+                                          comment.comment_reactions?.find((r: any) => r.user_id === profile?.id && r.emoji === "❤️")
+                                            ? "text-primary font-medium"
+                                            : "text-muted-foreground hover:text-primary"
+                                        } transition-colors`}
+                                      >
+                                        <Heart className={`h-3 w-3 ${
+                                          comment.comment_reactions?.find((r: any) => r.user_id === profile?.id && r.emoji === "❤️")
+                                            ? "fill-primary"
+                                            : ""
+                                        }`} />
+                                        <span>{comment.comment_reactions?.filter((r: any) => r.emoji === "❤️").length || 0}</span>
+                                      </button>
+                                      <button
+                                        onClick={() => setReplyingTo({ ...replyingTo, [post.id]: comment.id })}
+                                        className="text-xs text-muted-foreground hover:text-primary transition-colors"
+                                      >
+                                        Reply
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Nested Replies */}
+                                {comment.replies && comment.replies.length > 0 && (
+                                  <div className="ml-4 space-y-2 border-l-2 border-primary/10 pl-4 mt-2">
+                                    {comment.replies.map((reply: any) => (
+                                      <div key={reply.id} className="space-y-1">
+                                        <div className="flex items-center gap-2">
+                                          <span className="font-semibold text-primary text-xs">{reply.profiles?.username}</span>
+                                          <span className="text-xs text-muted-foreground">
+                                            {formatDistanceToNow(new Date(reply.created_at), { addSuffix: true })}
+                                          </span>
+                                          {reply.author_id === profile?.id && (
+                                            <Button
+                                              variant="ghost"
+                                              size="icon"
+                                              className="h-4 w-4 hover:bg-destructive/10 hover:text-destructive"
+                                              onClick={() => {
+                                                if (confirm("Delete this reply?")) {
+                                                  deleteCommentMutation.mutate(reply.id);
+                                                }
+                                              }}
+                                            >
+                                              <X className="h-2 w-2" />
+                                            </Button>
+                                          )}
+                                        </div>
+                                        <p className="text-xs text-card-foreground/80">{reply.content}</p>
+                                        <button
+                                          onClick={() => toggleCommentReactionMutation.mutate({ commentId: reply.id, emoji: "❤️" })}
+                                          className={`flex items-center gap-1 text-xs ${
+                                            reply.comment_reactions?.find((r: any) => r.user_id === profile?.id && r.emoji === "❤️")
+                                              ? "text-primary font-medium"
+                                              : "text-muted-foreground hover:text-primary"
+                                          } transition-colors`}
+                                        >
+                                          <Heart className={`h-2.5 w-2.5 ${
+                                            reply.comment_reactions?.find((r: any) => r.user_id === profile?.id && r.emoji === "❤️")
+                                              ? "fill-primary"
+                                              : ""
+                                          }`} />
+                                          <span>{reply.comment_reactions?.filter((r: any) => r.emoji === "❤️").length || 0}</span>
+                                        </button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+
+                                {/* Reply Input */}
+                                {replyingTo[post.id] === comment.id && (
+                                  <div className="mt-2 flex gap-2 items-center">
+                                    <Input
+                                      value={commentContent[`${post.id}-${comment.id}`] || ""}
+                                      onChange={(e) => setCommentContent({ ...commentContent, [`${post.id}-${comment.id}`]: e.target.value })}
+                                      placeholder={`Reply to ${comment.profiles?.username}...`}
+                                      className="text-xs h-8 bg-card border-border/50 rounded-full px-3"
+                                      onKeyDown={(e) => {
+                                        if (e.key === "Enter" && commentContent[`${post.id}-${comment.id}`]?.trim()) {
+                                          createCommentMutation.mutate({
+                                            postId: post.id,
+                                            content: commentContent[`${post.id}-${comment.id}`],
+                                            parentId: comment.id,
+                                          });
+                                        }
+                                      }}
+                                    />
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                      onClick={() => setReplyingTo({ ...replyingTo, [post.id]: null })}
+                                    >
+                                      <X className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -583,7 +812,7 @@ export default function Community() {
                           <Input
                             value={commentContent[post.id] || ""}
                             onChange={(e) => setCommentContent({ ...commentContent, [post.id]: e.target.value })}
-                            placeholder="Write a reply..."
+                            placeholder="Write a comment..."
                             className="text-sm h-9 bg-card border-border/50 rounded-full px-4"
                             onKeyDown={(e) => {
                               if (e.key === "Enter" && commentContent[post.id]?.trim()) {

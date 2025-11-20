@@ -14,8 +14,8 @@ import { ReactionAnimation } from "@/components/ReactionAnimation";
 import { MediaPreview } from "@/components/MediaPreview";
 import { EmojiType } from "@/services/notificationService";
 import { 
-  ArrowLeft, Users, Send, Image as ImageIcon, CheckCircle2, Search, Settings, X,
-  ChevronDown, ChevronUp, FileText, Video, Music, Link as LinkIcon, Mic, Phone, MoreVertical
+  ArrowLeft, Users, Send, Image as ImageIcon, CheckCircle2, Search, X,
+  ChevronDown, ChevronUp, FileText, Video, Music, Link as LinkIcon, MessageCircle, MoreVertical
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -34,6 +34,7 @@ export default function Community() {
   const [animatingEmoji, setAnimatingEmoji] = useState<EmojiType | null>(null);
   const [showGroupInfo, setShowGroupInfo] = useState(true);
   const [filesExpanded, setFilesExpanded] = useState(true);
+  const [showComments, setShowComments] = useState<{ [key: string]: boolean }>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -403,30 +404,23 @@ export default function Community() {
               </Avatar>
               <div className="flex-1">
                 <h1 className="text-lg font-semibold text-card-foreground">{community.name}</h1>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <span>{members?.length || 0} members, {members?.filter((m: any) => m.profiles).length || 0} online</span>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                    <Users className="h-4 w-4" />
+                    <span>{members?.length || 0} members</span>
+                  </div>
+                  {membership && (
+                    <Badge variant="secondary" className="text-xs bg-primary/20 text-primary border-primary/30">
+                      <CheckCircle2 className="h-3 w-3 mr-1" />
+                      Joined
+                    </Badge>
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="ghost" size="icon" className="hover:bg-accent rounded-full">
-                  <Search className="h-5 w-5" />
-                </Button>
-                <Button variant="ghost" size="icon" className="hover:bg-accent rounded-full">
-                  <Phone className="h-5 w-5" />
-                </Button>
-                <Button variant="ghost" size="icon" className="hover:bg-accent rounded-full" onClick={() => setShowGroupInfo(!showGroupInfo)}>
+                <Button variant="ghost" size="icon" onClick={() => setShowGroupInfo(!showGroupInfo)} className="hover:bg-accent rounded-full">
                   <MoreVertical className="h-5 w-5" />
                 </Button>
-                {isOwner && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => navigate(`/edit-community/${id}`)}
-                    className="hover:bg-accent rounded-full"
-                  >
-                    <Settings className="h-5 w-5" />
-                  </Button>
-                )}
               </div>
             </div>
           </header>
@@ -490,8 +484,8 @@ export default function Community() {
                     </div>
 
                     {/* Comments */}
-                    {postComments.length > 0 && (
-                      <div className="mt-3 space-y-2 ml-4 border-l-2 border-primary/20 pl-4">
+                    {showComments[post.id] && postComments.length > 0 && (
+                      <div className="mt-3 space-y-2 ml-4 border-l-2 border-primary/20 pl-4 animate-fade-in">
                         {postComments.map((comment: any) => (
                           <div key={comment.id} className="text-sm">
                             <span className="font-medium text-primary">{comment.profiles?.username}</span>
@@ -499,6 +493,18 @@ export default function Community() {
                           </div>
                         ))}
                       </div>
+                    )}
+                    
+                    {postComments.length > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowComments({ ...showComments, [post.id]: !showComments[post.id] })}
+                        className="text-xs text-muted-foreground hover:text-card-foreground mt-2"
+                      >
+                        <MessageCircle className="h-4 w-4 mr-1" />
+                        {showComments[post.id] ? 'Hide' : 'Show'} {postComments.length} {postComments.length === 1 ? 'comment' : 'comments'}
+                      </Button>
                     )}
 
                     {/* Comment Input */}
@@ -525,54 +531,61 @@ export default function Community() {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input Area */}
-          <div className="border-t border-border/30 bg-card/98 backdrop-blur-md p-4 shadow-card">
-            <MediaPreview files={mediaFiles} onRemove={handleRemoveFile} />
-            <div className="flex gap-2 items-end">
-              <input
-                ref={fileInputRef}
-                type="file"
-                multiple
-                accept="image/*,video/*"
-                onChange={handleFileSelect}
-                className="hidden"
-              />
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
-                className="hover:bg-accent rounded-full"
-              >
-                <ImageIcon className="h-5 w-5" />
-              </Button>
-              <Textarea
-                value={postContent}
-                onChange={(e) => setPostContent(e.target.value)}
-                placeholder="Your message"
-                className="resize-none bg-accent/30 border-border/50 min-h-[44px] max-h-32 rounded-2xl"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    if (postContent.trim() || mediaFiles.length > 0) {
-                      createPostMutation.mutate();
+          {/* Input Area - Only for Creator */}
+          {isOwner && (
+            <div className="border-t border-border/30 bg-card/98 backdrop-blur-md p-4 shadow-card">
+              <MediaPreview files={mediaFiles} onRemove={handleRemoveFile} />
+              <div className="flex gap-2 items-end">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept="image/*,video/*"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="hover:bg-accent rounded-full"
+                >
+                  <ImageIcon className="h-5 w-5" />
+                </Button>
+                <Textarea
+                  value={postContent}
+                  onChange={(e) => setPostContent(e.target.value)}
+                  placeholder="Your message"
+                  className="resize-none bg-accent/30 border-border/50 min-h-[44px] max-h-32 rounded-2xl"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      if (postContent.trim() || mediaFiles.length > 0) {
+                        createPostMutation.mutate();
+                      }
                     }
-                  }
-                }}
-              />
-              <Button
-                onClick={() => createPostMutation.mutate()}
-                disabled={(!postContent.trim() && mediaFiles.length === 0) || uploading}
-                className="bg-primary hover:bg-primary/90 shadow-sm rounded-full"
-              >
-                {uploading ? (
-                  <span className="animate-pulse">...</span>
-                ) : (
-                  <Send className="h-5 w-5" />
-                )}
-              </Button>
+                  }}
+                />
+                <Button
+                  onClick={() => createPostMutation.mutate()}
+                  disabled={(!postContent.trim() && mediaFiles.length === 0) || uploading}
+                  className="bg-primary hover:bg-primary/90 shadow-sm rounded-full"
+                >
+                  {uploading ? (
+                    <span className="animate-pulse">...</span>
+                  ) : (
+                    <Send className="h-5 w-5" />
+                  )}
+                </Button>
+              </div>
             </div>
-          </div>
+          )}
+          {!isOwner && (
+            <div className="border-t border-border/30 bg-card/98 backdrop-blur-md p-4 text-center">
+              <p className="text-sm text-muted-foreground">Only the creator can send messages in this community</p>
+            </div>
+          )}
         </div>
 
         {/* Group Info Sidebar */}
@@ -678,23 +691,26 @@ export default function Community() {
                 </div>
                 <div className="space-y-2">
                   {members?.map((member: any) => (
-                    <div key={member.id} className="flex items-center gap-3 p-2 hover:bg-accent/50 rounded-lg transition-colors">
-                      <Avatar className="h-10 w-10">
-                        <AvatarImage src={member.profiles?.avatar_url} />
-                        <AvatarFallback className="bg-primary/10 text-primary">
-                          {member.profiles?.username?.[0]?.toUpperCase()}
+                    <div key={member.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-accent/50 transition-colors">
+                      <Avatar className="h-8 w-8 border border-border/20">
+                        <AvatarImage src={member.profiles?.avatar_url || ""} />
+                        <AvatarFallback className="bg-primary/20 text-primary text-xs">
+                          {member.profiles?.username?.[0]?.toUpperCase() || "?"}
                         </AvatarFallback>
                       </Avatar>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-card-foreground">{member.profiles?.username}</span>
-                          {member.role === 'owner' && (
-                            <Badge variant="secondary" className="text-xs bg-primary/10 text-primary">admin</Badge>
-                          )}
-                        </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-card-foreground truncate">
+                          {member.profiles?.username || "Unknown"}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {member.user_id === community?.owner_id ? "Community Creator" : "Member"}
+                        </p>
                       </div>
                     </div>
                   ))}
+                  {(!members || members.length === 0) && (
+                    <p className="text-sm text-muted-foreground text-center py-4">No members yet</p>
+                  )}
                 </div>
               </div>
             </div>

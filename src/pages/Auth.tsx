@@ -15,6 +15,8 @@ export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
+  const [signupEmail, setSignupEmail] = useState("");
+  const [autoUsername, setAutoUsername] = useState("");
 
   useEffect(() => {
     // Check if user is already logged in
@@ -40,7 +42,7 @@ export default function Auth() {
     const formData = new FormData(e.currentTarget);
     const email = formData.get("signup-email") as string;
     const password = formData.get("signup-password") as string;
-    const username = formData.get("username") as string;
+    const username = formData.get("username") as string || email.split('@')[0];
 
     const { error } = await supabase.auth.signUp({
       email,
@@ -282,17 +284,6 @@ export default function Auth() {
             <TabsContent value="signup" className="mt-6">
               <form onSubmit={handleSignUp} className="space-y-5">
                 <div className="space-y-2">
-                  <Label htmlFor="username" className="text-sm font-medium">Username</Label>
-                  <Input
-                    id="username"
-                    name="username"
-                    type="text"
-                    placeholder="johndoe"
-                    required
-                    className="h-11"
-                  />
-                </div>
-                <div className="space-y-2">
                   <Label htmlFor="signup-email" className="text-sm font-medium">Email</Label>
                   <Input
                     id="signup-email"
@@ -301,7 +292,25 @@ export default function Auth() {
                     placeholder="you@example.com"
                     required
                     className="h-11"
+                    value={signupEmail}
+                    onChange={(e) => {
+                      setSignupEmail(e.target.value);
+                      setAutoUsername(e.target.value.split('@')[0]);
+                    }}
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="username" className="text-sm font-medium">
+                    Username <span className="text-xs text-muted-foreground">(optional)</span>
+                  </Label>
+                  <Input
+                    id="username"
+                    name="username"
+                    type="text"
+                    placeholder={autoUsername || "johndoe"}
+                    className="h-11"
+                  />
+                  <p className="text-xs text-muted-foreground">Leave empty to use: {autoUsername || "username from email"}</p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="signup-password" className="text-sm font-medium">Password</Label>

@@ -286,7 +286,7 @@ export default function Community() {
           post_id: postId,
           user_id: profile.id,
           emoji,
-          type: "emoji",
+          type: "like",
         });
         if (error) throw error;
         setAnimatingEmoji(emoji);

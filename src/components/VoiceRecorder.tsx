@@ -18,10 +18,30 @@ export const VoiceRecorder = ({ onSend, onCancel }: VoiceRecorderProps) => {
 
   const startRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm;codecs=opus'
+      // Check if browser supports getUserMedia
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error("Your browser doesn't support audio recording. Please use Chrome, Firefox, or Safari.");
+      }
+
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        }
       });
+      
+      // Check if MediaRecorder is supported
+      if (!window.MediaRecorder) {
+        stream.getTracks().forEach(track => track.stop());
+        throw new Error("Audio recording is not supported in your browser");
+      }
+
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
+        ? 'audio/webm;codecs=opus'
+        : 'audio/webm';
+
+      const mediaRecorder = new MediaRecorder(stream, { mimeType });
 
       mediaRecorderRef.current = mediaRecorder;
       chunksRef.current = [];
@@ -33,7 +53,7 @@ export const VoiceRecorder = ({ onSend, onCancel }: VoiceRecorderProps) => {
       };
 
       mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
+        const audioBlob = new Blob(chunksRef.current, { type: mimeType });
         onSend(audioBlob);
         stream.getTracks().forEach(track => track.stop());
       };
@@ -45,10 +65,26 @@ export const VoiceRecorder = ({ onSend, onCancel }: VoiceRecorderProps) => {
       timerRef.current = setInterval(() => {
         setRecordingTime((prev) => prev + 1);
       }, 1000);
-    } catch (error) {
+    } catch (error: any) {
+      console.error("Microphone access error:", error);
+      
+      let errorMessage = "Could not access microphone. ";
+      
+      if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+        errorMessage += "Please allow microphone access in your browser settings.";
+      } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
+        errorMessage += "No microphone found. Please connect a microphone.";
+      } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
+        errorMessage += "Microphone is already in use by another application.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      } else {
+        errorMessage += "Please check your browser permissions and try again.";
+      }
+      
       toast({
-        title: "Error",
-        description: "Could not access microphone",
+        title: "Microphone Error",
+        description: errorMessage,
         variant: "destructive",
       });
     }

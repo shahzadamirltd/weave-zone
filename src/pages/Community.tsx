@@ -282,20 +282,70 @@ export default function Community() {
         const { error } = await supabase.from("reactions").delete().eq("id", existingReaction.id);
         if (error) throw error;
       } else {
-        // Instant animation
-        setAnimatingPost(postId);
-        setTimeout(() => setAnimatingPost(null), 150);
-        
         const { error } = await supabase.from("reactions").insert({
           post_id: postId,
           user_id: profile.id,
           emoji,
           type: "like",
         });
-        if (error) throw error;
+        // Ignore duplicate key errors (happens with fast clicks)
+        if (error && error.code !== '23505') throw error;
       }
     },
-    onSuccess: () => {
+    onMutate: async ({ postId, emoji }) => {
+      // Instant animation
+      setAnimatingPost(postId);
+      setTimeout(() => setAnimatingPost(null), 150);
+      
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ["posts", id] });
+      
+      // Snapshot previous value
+      const previousPosts = queryClient.getQueryData(["posts", id]);
+      
+      // Optimistically update
+      queryClient.setQueryData(["posts", id], (old: any) => {
+        if (!old) return old;
+        return old.map((post: any) => {
+          if (post.id !== postId) return post;
+          
+          const existingReaction = post.reactions?.find(
+            (r: any) => r.user_id === profile?.id && r.emoji === emoji
+          );
+          
+          if (existingReaction) {
+            // Remove reaction
+            return {
+              ...post,
+              reactions: post.reactions.filter((r: any) => r.id !== existingReaction.id)
+            };
+          } else {
+            // Add reaction
+            return {
+              ...post,
+              reactions: [
+                ...(post.reactions || []),
+                {
+                  id: 'temp-' + Date.now(),
+                  user_id: profile?.id,
+                  emoji,
+                  type: 'like'
+                }
+              ]
+            };
+          }
+        });
+      });
+      
+      return { previousPosts };
+    },
+    onError: (err, variables, context) => {
+      // Rollback on error
+      if (context?.previousPosts) {
+        queryClient.setQueryData(["posts", id], context.previousPosts);
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["posts", id] });
     },
   });
@@ -410,6 +460,26 @@ export default function Community() {
                       <CheckCircle2 className="h-3 w-3 mr-1" />
                       Joined
                     </Badge>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="relative w-64">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="text"
+                    placeholder="Search posts..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10 pr-10 bg-muted/40 border-border/40 h-9"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery("")}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 hover:bg-accent rounded-full p-1"
+                    >
+                      <X className="h-3 w-3 text-muted-foreground" />
+                    </button>
                   )}
                 </div>
               </div>

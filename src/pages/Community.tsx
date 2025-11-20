@@ -11,10 +11,13 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { EmojiReactionPicker } from "@/components/EmojiReactionPicker";
 import { MediaPreview } from "@/components/MediaPreview";
+import { VoiceRecorder } from "@/components/VoiceRecorder";
+import { LiveStreamBanner } from "@/components/community/LiveStreamBanner";
+import { CommunityLiveStream } from "@/components/community/CommunityLiveStream";
 import { EmojiType } from "@/services/notificationService";
 import {
   ArrowLeft, Users, Send, Image as ImageIcon, CheckCircle2, Search, X,
-  ChevronDown, ChevronUp, FileText, Video, Music, Link as LinkIcon, MessageCircle, MoreVertical, Heart
+  ChevronDown, ChevronUp, FileText, Video as VideoIcon, Music, Link as LinkIcon, MessageCircle, MoreVertical, Heart
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -36,6 +39,7 @@ export default function Community() {
   const [showComments, setShowComments] = useState<{ [key: string]: boolean }>({});
   const [collapsedPosts, setCollapsedPosts] = useState<{ [key: string]: boolean }>({});
   const [replyingTo, setReplyingTo] = useState<{ [key: string]: string | null }>({});
+  const [showLiveStream, setShowLiveStream] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -140,6 +144,20 @@ export default function Community() {
       return data || [];
     },
     enabled: !!posts && posts.length > 0,
+  });
+
+  const { data: activeLiveStream } = useQuery({
+    queryKey: ["active-live-stream", id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("live_streams")
+        .select("*, profiles(*)")
+        .eq("community_id", id)
+        .eq("status", "active")
+        .maybeSingle();
+      return data;
+    },
+    refetchInterval: 5000,
   });
 
   // Set up realtime
@@ -272,6 +290,46 @@ export default function Community() {
       setReplyingTo({});
       queryClient.invalidateQueries({ queryKey: ["comments", id] });
       toast({ title: "Success", description: "Comment posted" });
+    },
+  });
+
+  const sendVoiceMessageMutation = useMutation({
+    mutationFn: async (audioBlob: Blob) => {
+      if (!profile) throw new Error("Not authenticated");
+      
+      setUploading(true);
+      const fileName = `${profile.id}/${Date.now()}_voice.webm`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('community-media')
+        .upload(fileName, audioBlob, {
+          contentType: 'audio/webm',
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('community-media')
+        .getPublicUrl(fileName);
+      
+      const { error } = await supabase.from("posts").insert({
+        community_id: id,
+        author_id: profile.id,
+        content: "🎤 Voice message",
+        media_urls: [publicUrl],
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setUploading(false);
+      queryClient.invalidateQueries({ queryKey: ["posts", id] });
+      toast({ title: "Success", description: "Voice message sent" });
+    },
+    onError: (error: any) => {
+      setUploading(false);
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     },
   });
 
@@ -555,6 +613,19 @@ export default function Community() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
+                {/* Go Live Button - Only for Creator */}
+                {isOwner && !activeLiveStream && (
+                  <Button
+                    onClick={() => setShowLiveStream(true)}
+                    variant="destructive"
+                    size="sm"
+                    className="gap-2 animate-pulse"
+                  >
+                    <VideoIcon className="h-4 w-4" />
+                    Go Live
+                  </Button>
+                )}
+                
                 <div className="relative w-64">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -579,6 +650,14 @@ export default function Community() {
 
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-gradient-to-b from-transparent to-background/5">
+            {/* Live Stream Banner */}
+            {activeLiveStream && (
+              <LiveStreamBanner
+                viewerCount={activeLiveStream.viewer_count || 0}
+                onJoin={() => setShowLiveStream(true)}
+              />
+            )}
+            
             {filteredPosts?.map((post: any) => {
               const postComments = commentsData?.filter((c: any) => c.post_id === post.id) || [];
               const userReaction = post.reactions?.find((r: any) => r.user_id === profile?.id);
@@ -855,6 +934,10 @@ export default function Community() {
                 >
                   <ImageIcon className="h-4 w-4" />
                 </Button>
+                <VoiceRecorder
+                  onSend={(blob) => sendVoiceMessageMutation.mutate(blob)}
+                  onCancel={() => {}}
+                />
                 <div className="flex-1 bg-muted/40 rounded-full px-4 py-1 border border-border/40 flex items-center gap-2">
                   <input
                     type="text"
@@ -933,7 +1016,7 @@ export default function Community() {
                   {mediaStats.videos > 0 && (
                     <div className="flex items-center justify-between text-sm py-2 hover:bg-accent/30 rounded-lg px-2 cursor-pointer">
                       <div className="flex items-center gap-2">
-                        <Video className="h-4 w-4 text-muted-foreground" />
+                        <VideoIcon className="h-4 w-4 text-muted-foreground" />
                         <span className="text-muted-foreground">{mediaStats.videos} videos</span>
                       </div>
                       <ChevronDown className="h-4 w-4" />
@@ -1000,6 +1083,15 @@ export default function Community() {
           </div>
         )}
       </div>
+      
+      {/* Live Stream Modal */}
+      {showLiveStream && id && (
+        <CommunityLiveStream
+          communityId={id}
+          isOwner={isOwner}
+          onClose={() => setShowLiveStream(false)}
+        />
+      )}
     </AppLayout>
   );
 }

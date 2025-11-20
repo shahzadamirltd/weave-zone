@@ -23,13 +23,30 @@ export const VoiceRecorder = ({ onSend, onCancel }: VoiceRecorderProps) => {
         throw new Error("Your browser doesn't support audio recording. Please use Chrome, Firefox, or Safari.");
       }
 
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true
-        }
-      });
+      // Check if any audio input devices are available
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const audioDevices = devices.filter(device => device.kind === 'audioinput');
+      
+      if (audioDevices.length === 0) {
+        throw new Error("No microphone found. Please connect a microphone and try again.");
+      }
+
+      let stream: MediaStream;
+      
+      // Try with constraints first, then fallback to basic
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ 
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true
+          }
+        });
+      } catch (constraintError) {
+        console.log("Trying basic audio constraints...", constraintError);
+        // Fallback to basic audio without constraints
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      }
       
       // Check if MediaRecorder is supported
       if (!window.MediaRecorder) {
@@ -71,19 +88,19 @@ export const VoiceRecorder = ({ onSend, onCancel }: VoiceRecorderProps) => {
       let errorMessage = "Could not access microphone. ";
       
       if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
-        errorMessage += "Please allow microphone access in your browser settings.";
+        errorMessage = "Please click Allow when your browser asks for microphone permission.";
       } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
-        errorMessage += "No microphone found. Please connect a microphone.";
+        errorMessage = "No microphone detected. Please connect a microphone and refresh the page.";
       } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
-        errorMessage += "Microphone is already in use by another application.";
+        errorMessage = "Microphone is already being used by another app. Please close other apps and try again.";
       } else if (error.message) {
         errorMessage = error.message;
       } else {
-        errorMessage += "Please check your browser permissions and try again.";
+        errorMessage = "Please check your microphone connection and browser permissions.";
       }
       
       toast({
-        title: "Microphone Error",
+        title: "Cannot Record Audio",
         description: errorMessage,
         variant: "destructive",
       });

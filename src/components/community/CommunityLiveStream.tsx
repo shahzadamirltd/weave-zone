@@ -105,10 +105,48 @@ export const CommunityLiveStream = ({ communityId, isOwner, onClose }: Community
       if (!profile) throw new Error("Not authenticated");
 
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: 1280, height: 720 },
-          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-        });
+        // Check if browser supports getUserMedia
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          throw new Error("Your browser doesn't support live streaming. Please use Chrome, Firefox, or Safari.");
+        }
+
+        // Check if camera and microphone are available
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter(device => device.kind === 'videoinput');
+        const audioDevices = devices.filter(device => device.kind === 'audioinput');
+        
+        if (videoDevices.length === 0) {
+          throw new Error("No camera found. Please connect a camera and try again.");
+        }
+        
+        if (audioDevices.length === 0) {
+          throw new Error("No microphone found. Please connect a microphone and try again.");
+        }
+
+        let stream: MediaStream;
+        
+        // Try with full constraints first
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: { 
+              width: { ideal: 1280 }, 
+              height: { ideal: 720 },
+              facingMode: "user"
+            },
+            audio: { 
+              echoCancellation: true, 
+              noiseSuppression: true, 
+              autoGainControl: true 
+            },
+          });
+        } catch (constraintError) {
+          console.log("Trying basic constraints...", constraintError);
+          // Fallback to basic video/audio without specific constraints
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: true,
+          });
+        }
 
         streamRef.current = stream;
         if (videoRef.current) {
@@ -127,10 +165,23 @@ export const CommunityLiveStream = ({ communityId, isOwner, onClose }: Community
         if (error) throw error;
         return data;
       } catch (err: any) {
+        console.error("Live stream start error:", err);
+        
+        let errorMessage = "Failed to start live stream. ";
+        
         if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-          throw new Error("Camera/microphone permission denied. Please allow access and try again.");
+          errorMessage = "Please click Allow when your browser asks for camera and microphone permission.";
+        } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+          errorMessage = "Camera or microphone not detected. Please connect your devices and refresh the page.";
+        } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+          errorMessage = "Camera or microphone is being used by another app. Please close other apps and try again.";
+        } else if (err.message) {
+          errorMessage = err.message;
+        } else {
+          errorMessage = "Please check your camera and microphone connections.";
         }
-        throw err;
+        
+        throw new Error(errorMessage);
       }
     },
     onSuccess: (data) => {
@@ -140,7 +191,7 @@ export const CommunityLiveStream = ({ communityId, isOwner, onClose }: Community
       queryClient.invalidateQueries({ queryKey: ["live-stream", communityId] });
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: "Cannot Start Stream", description: error.message, variant: "destructive" });
     },
   });
 

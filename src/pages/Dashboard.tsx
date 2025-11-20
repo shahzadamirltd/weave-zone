@@ -87,15 +87,15 @@ export default function Dashboard() {
 
     return (
       <div 
-        className="flex items-center gap-4 bg-white rounded-2xl p-4 hover:shadow-lg transition-all cursor-pointer border border-border/50"
+        className="flex items-center gap-4 bg-card rounded-2xl p-4 hover:shadow-elegant transition-all cursor-pointer border border-border/30"
         onClick={() => navigate(`/community/${community.id}`)}
       >
         {/* Community Image */}
-        <div className="w-24 h-24 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 flex-shrink-0 overflow-hidden">
+        <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-primary/20 to-secondary/20 flex-shrink-0 overflow-hidden">
           {community.avatar_url ? (
             <img src={community.avatar_url} alt={community.name} className="w-full h-full object-cover" />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-2xl font-bold text-primary/40">
+            <div className="w-full h-full flex items-center justify-center text-2xl font-bold text-primary">
               {community.name.charAt(0).toUpperCase()}
             </div>
           )}
@@ -103,7 +103,7 @@ export default function Dashboard() {
 
         {/* Community Info */}
         <div className="flex-1 min-w-0">
-          <h3 className="text-lg font-semibold text-foreground mb-1 truncate">
+          <h3 className="text-lg font-semibold text-card-foreground mb-1 truncate">
             {community.name}
           </h3>
           <div className="flex items-center gap-3 text-sm text-muted-foreground">
@@ -170,15 +170,15 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex min-h-screen">
       <Sidebar />
       
       <main className="flex-1 ml-64">
         {/* Header */}
-        <header className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border/50 px-8 py-4">
+        <header className="sticky top-0 z-10 bg-card/98 backdrop-blur-md border-b border-border/30 px-8 py-4 shadow-card">
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-foreground">Communities</h1>
-            <Button variant="ghost" size="icon" className="rounded-lg">
+            <h1 className="text-2xl font-bold text-card-foreground">Communities</h1>
+            <Button variant="ghost" size="icon" className="rounded-lg hover:bg-accent">
               <Search className="h-5 w-5" />
             </Button>
           </div>
@@ -188,9 +188,9 @@ export default function Dashboard() {
         <div className="p-8">
           <div className="max-w-5xl">
             <Tabs defaultValue="owned" className="w-full">
-              <TabsList className="grid w-full max-w-md grid-cols-2">
-                <TabsTrigger value="owned">My Communities</TabsTrigger>
-                <TabsTrigger value="joined">Joined Communities</TabsTrigger>
+              <TabsList className="grid w-full max-w-md grid-cols-2 bg-accent/30">
+                <TabsTrigger value="owned" className="data-[state=active]:bg-card data-[state=active]:shadow-sm">My Communities</TabsTrigger>
+                <TabsTrigger value="joined" className="data-[state=active]:bg-card data-[state=active]:shadow-sm">Joined Communities</TabsTrigger>
               </TabsList>
               
               <TabsContent value="owned" className="space-y-4 mt-6">
@@ -199,11 +199,11 @@ export default function Dashboard() {
                     <CommunityCard key={community.id} community={community} showEdit={true} />
                   ))
                 ) : (
-                  <div className="flex flex-col items-center justify-center py-20 glass border-2 border-dashed border-border/50 rounded-2xl">
-                    <p className="text-center text-muted-foreground font-medium">
+                  <div className="flex flex-col items-center justify-center py-20 glass-card border-2 border-dashed border-border/30 rounded-2xl">
+                    <p className="text-center text-card-foreground font-medium">
                       No communities yet
                     </p>
-                    <p className="text-center text-muted-foreground/60 text-sm mt-1">
+                    <p className="text-center text-muted-foreground text-sm mt-1">
                       Create your first community to get started
                     </p>
                   </div>
@@ -216,11 +216,11 @@ export default function Dashboard() {
                     <CommunityCard key={community.id} community={community} showEdit={false} />
                   ))
                 ) : (
-                  <div className="flex flex-col items-center justify-center py-20 glass border-2 border-dashed border-border/50 rounded-2xl">
-                    <p className="text-center text-muted-foreground font-medium">
+                  <div className="flex flex-col items-center justify-center py-20 glass-card border-2 border-dashed border-border/30 rounded-2xl">
+                    <p className="text-center text-card-foreground font-medium">
                       No joined communities yet
                     </p>
-                    <p className="text-center text-muted-foreground/60 text-sm mt-1">
+                    <p className="text-center text-muted-foreground text-sm mt-1">
                       Join a community to see it here
                     </p>
                   </div>

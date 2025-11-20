@@ -360,9 +360,9 @@ export default function Community() {
         />
       )}
       
-      <div className="flex flex-col h-screen bg-background">
+      <div className="flex flex-col h-screen">
         {/* Header */}
-        <header className="sticky top-0 z-10 bg-card/95 backdrop-blur-sm border-b border-border/50 px-6 py-4 shadow-sm">
+        <header className="sticky top-0 z-10 bg-card/98 backdrop-blur-md border-b border-border/30 px-6 py-4 shadow-card">
           <div className="flex items-center gap-4">
             <Button
               variant="ghost"
@@ -412,7 +412,7 @@ export default function Community() {
         </header>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+        <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-gradient-to-b from-transparent to-background/5">
           {filteredPosts?.map((post: any) => {
             const postComments = commentsData?.filter((c: any) => c.post_id === post.id) || [];
             const userReaction = post.reactions?.find((r: any) => r.user_id === profile?.id);
@@ -506,7 +506,7 @@ export default function Community() {
         </div>
 
         {/* Input Area */}
-        <div className="border-t border-border/50 bg-card/95 backdrop-blur-sm p-4">
+        <div className="border-t border-border/30 bg-card/98 backdrop-blur-md p-4 shadow-card">
           <MediaPreview files={mediaFiles} onRemove={handleRemoveFile} />
           <div className="flex gap-2 items-end">
             <input

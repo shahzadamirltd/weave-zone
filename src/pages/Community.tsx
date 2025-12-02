@@ -13,8 +13,6 @@ import { EmojiReactionPicker } from "@/components/EmojiReactionPicker";
 import { MediaPreview } from "@/components/MediaPreview";
 import { VoiceRecorder } from "@/components/VoiceRecorder";
 import { AudioPlayer } from "@/components/AudioPlayer";
-import { LiveStreamBanner } from "@/components/community/LiveStreamBanner";
-import { CommunityLiveStream } from "@/components/community/CommunityLiveStream";
 import { EmojiType } from "@/services/notificationService";
 import {
   ArrowLeft, Users, Send, Image as ImageIcon, CheckCircle2, Search, X,
@@ -40,7 +38,6 @@ export default function Community() {
   const [showComments, setShowComments] = useState<{ [key: string]: boolean }>({});
   const [collapsedPosts, setCollapsedPosts] = useState<{ [key: string]: boolean }>({});
   const [replyingTo, setReplyingTo] = useState<{ [key: string]: string | null }>({});
-  const [showLiveStream, setShowLiveStream] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -645,19 +642,6 @@ export default function Community() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                {/* Go Live Button - Only for Creator */}
-                {isOwner && !activeLiveStream && (
-                  <Button
-                    onClick={() => setShowLiveStream(true)}
-                    variant="destructive"
-                    size="sm"
-                    className="gap-2 animate-pulse"
-                  >
-                    <VideoIcon className="h-4 w-4" />
-                    Go Live
-                  </Button>
-                )}
-                
                 <div className="relative w-64">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -682,14 +666,6 @@ export default function Community() {
 
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-gradient-to-b from-transparent to-background/5">
-            {/* Live Stream Banner */}
-            {activeLiveStream && (
-              <LiveStreamBanner
-                viewerCount={activeLiveStream.viewer_count || 0}
-                onJoin={() => setShowLiveStream(true)}
-              />
-            )}
-            
             {filteredPosts?.map((post: any) => {
               const postComments = commentsData?.filter((c: any) => c.post_id === post.id) || [];
               const userReaction = post.reactions?.find((r: any) => r.user_id === profile?.id);
@@ -1138,15 +1114,6 @@ export default function Community() {
           </div>
         )}
       </div>
-      
-      {/* Live Stream Modal */}
-      {showLiveStream && id && (
-        <CommunityLiveStream
-          communityId={id}
-          isOwner={isOwner}
-          onClose={() => setShowLiveStream(false)}
-        />
-      )}
     </AppLayout>
   );
 }

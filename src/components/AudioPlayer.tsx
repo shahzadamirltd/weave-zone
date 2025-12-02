@@ -46,7 +46,7 @@ export const AudioPlayer = ({ audioUrl, duration }: AudioPlayerProps) => {
   };
 
   const formatTime = (time: number) => {
-    if (!isFinite(time) || isNaN(time)) return '0:00';
+    if (!isFinite(time) || isNaN(time) || time === 0) return '--';
     const mins = Math.floor(time / 60);
     const secs = Math.floor(time % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
@@ -63,7 +63,17 @@ export const AudioPlayer = ({ audioUrl, duration }: AudioPlayerProps) => {
 
   return (
     <div className="flex items-center gap-3 bg-accent/30 rounded-2xl p-3 max-w-xs">
-      <audio ref={audioRef} src={audioUrl} preload="metadata" />
+      <audio 
+        ref={audioRef} 
+        src={audioUrl} 
+        preload="metadata"
+        onLoadedMetadata={(e) => {
+          const audio = e.currentTarget;
+          if (audio.duration && isFinite(audio.duration)) {
+            setAudioDuration(audio.duration);
+          }
+        }}
+      />
       
       <Button
         variant="ghost"

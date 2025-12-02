@@ -32,7 +32,7 @@ export default function Dashboard() {
     },
   });
 
-  const { data: ownedCommunities } = useQuery({
+  const { data: ownedCommunities, isLoading: isLoadingOwned } = useQuery({
     queryKey: ["owned-communities", profile?.id],
     queryFn: async () => {
       if (!profile) return [];
@@ -48,7 +48,7 @@ export default function Dashboard() {
     enabled: !!profile,
   });
 
-  const { data: joinedCommunities } = useQuery({
+  const { data: joinedCommunities, isLoading: isLoadingJoined } = useQuery({
     queryKey: ["joined-communities", profile?.id],
     queryFn: async () => {
       if (!profile) return [];
@@ -311,7 +311,13 @@ export default function Dashboard() {
                 </TabsList>
               
               <TabsContent value="owned" className="space-y-4 mt-6">
-                {ownedCommunities && ownedCommunities.length > 0 ? (
+                {isLoadingOwned ? (
+                  <div className="space-y-4">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="h-24 bg-muted/20 rounded-2xl animate-pulse" />
+                    ))}
+                  </div>
+                ) : ownedCommunities && ownedCommunities.length > 0 ? (
                   ownedCommunities.map((community: any) => (
                     <CommunityCard key={community.id} community={community} showEdit={true} />
                   ))
@@ -328,7 +334,13 @@ export default function Dashboard() {
               </TabsContent>
 
               <TabsContent value="joined" className="space-y-4 mt-6">
-                {joinedCommunities && joinedCommunities.length > 0 ? (
+                {isLoadingJoined ? (
+                  <div className="space-y-4">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="h-24 bg-muted/20 rounded-2xl animate-pulse" />
+                    ))}
+                  </div>
+                ) : joinedCommunities && joinedCommunities.length > 0 ? (
                   joinedCommunities.map((community: any) => (
                     <CommunityCard key={community.id} community={community} showEdit={false} />
                   ))

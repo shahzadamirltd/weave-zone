@@ -46,6 +46,7 @@ export const AudioPlayer = ({ audioUrl, duration }: AudioPlayerProps) => {
   };
 
   const formatTime = (time: number) => {
+    if (!isFinite(time) || isNaN(time)) return '0:00';
     const mins = Math.floor(time / 60);
     const secs = Math.floor(time % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
@@ -88,7 +89,7 @@ export const AudioPlayer = ({ audioUrl, duration }: AudioPlayerProps) => {
         </div>
         
         <span className="text-xs text-muted-foreground font-medium min-w-[35px]">
-          {formatTime(isPlaying ? currentTime : audioDuration)}
+          {isPlaying ? formatTime(currentTime) : formatTime(audioDuration)}
         </span>
       </div>
     </div>

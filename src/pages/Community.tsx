@@ -305,7 +305,7 @@ export default function Community() {
       const tempId = `temp-${Date.now()}`;
       const optimisticPost = {
         id: tempId,
-        content: "🎤 Voice message",
+        content: "",
         media_urls: null,
         created_at: new Date().toISOString(),
         author_id: profile.id,
@@ -345,7 +345,7 @@ export default function Community() {
       const { error: postError } = await supabase
         .from("posts")
         .insert({
-          content: "🎤 Voice message",
+          content: "",
           media_urls: [publicUrl],
           author_id: profile.id,
           community_id: id!,
@@ -732,10 +732,12 @@ export default function Community() {
                       )}
                     </div>
                     <CollapsibleContent className="space-y-2">
-                      {/* Text Content */}
-                      <div className="inline-block bg-card rounded-2xl px-3 py-2 border border-border/40 shadow-sm max-w-[85%] md:max-w-[75%]">
-                        <p className="text-base text-card-foreground whitespace-pre-wrap break-words leading-relaxed">{post.content}</p>
-                      </div>
+                      {/* Text Content - Only show if there's actual content */}
+                      {post.content && post.content.trim() && (
+                        <div className="inline-block bg-card rounded-2xl px-3 py-2 border border-border/40 shadow-sm max-w-[85%] md:max-w-[75%]">
+                          <p className="text-base text-card-foreground whitespace-pre-wrap break-words leading-relaxed">{post.content}</p>
+                        </div>
+                      )}
                       
                       {/* Media Content */}
                       {post.media_urls && post.media_urls.length > 0 && (

@@ -88,8 +88,8 @@ export const AudioPlayer = ({ audioUrl, duration }: AudioPlayerProps) => {
           ))}
         </div>
         
-        <span className="text-xs text-muted-foreground font-medium min-w-[35px]">
-          {isPlaying ? formatTime(currentTime) : formatTime(audioDuration)}
+        <span className="text-xs text-muted-foreground font-medium min-w-[70px]">
+          {formatTime(currentTime)} / {formatTime(audioDuration)}
         </span>
       </div>
     </div>

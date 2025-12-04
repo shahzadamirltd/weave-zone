@@ -404,12 +404,14 @@ export default function Community() {
     mutationFn: async ({ commentId, emoji }: { commentId: string; emoji: string }) => {
       if (!profile) throw new Error("Not authenticated");
       
-      // Check for existing reaction from cached data first
-      const cachedComments = queryClient.getQueryData<any[]>(["comments", id]);
-      const comment = cachedComments?.find((c: any) => c.id === commentId);
-      const existingReaction = comment?.comment_reactions?.find(
-        (r: any) => r.user_id === profile.id && r.emoji === emoji
-      );
+      // Query database for existing reaction (not cache, to avoid temp IDs)
+      const { data: existingReaction } = await supabase
+        .from("comment_reactions")
+        .select("id")
+        .eq("comment_id", commentId)
+        .eq("user_id", profile.id)
+        .eq("emoji", emoji)
+        .maybeSingle();
 
       if (existingReaction) {
         const { error } = await supabase

@@ -38,11 +38,21 @@ export default function Community() {
   const [showComments, setShowComments] = useState<{ [key: string]: boolean }>({});
   const [collapsedPosts, setCollapsedPosts] = useState<{ [key: string]: boolean }>({});
   const [replyingTo, setReplyingTo] = useState<{ [key: string]: string | null }>({});
+  const [showScrollButton, setShowScrollButton] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const handleScroll = () => {
+    if (chatContainerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
+      const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+      setShowScrollButton(!isNearBottom);
+    }
   };
 
   const { data: profile } = useQuery({
@@ -521,6 +531,7 @@ export default function Community() {
   );
 
   const isOwner = community?.owner_id === profile?.id;
+  const canPost = isOwner || (community?.allow_member_posts && membership);
 
   // Organize comments into tree structure (parent-child)
   const organizeComments = (comments: any[]) => {
@@ -610,7 +621,7 @@ export default function Community() {
     <AppLayout>
       <div className="flex h-screen">
         {/* Main Chat Area */}
-        <div className={`flex flex-col transition-all ${showGroupInfo ? 'flex-1' : 'w-full'}`}>
+        <div className={`flex flex-col transition-all relative ${showGroupInfo ? 'flex-1' : 'w-full'}`}>
           {/* Header */}
           <header className="sticky top-0 z-10 bg-card/98 backdrop-blur-md border-b border-border/30 px-6 py-4 shadow-card">
             <div className="flex items-center gap-4">
@@ -665,7 +676,11 @@ export default function Community() {
           </header>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-gradient-to-b from-transparent to-background/5">
+          <div 
+            ref={chatContainerRef}
+            onScroll={handleScroll}
+            className="flex-1 overflow-y-auto p-6 space-y-4 bg-gradient-to-b from-transparent to-background/5 relative"
+          >
             {filteredPosts?.map((post: any) => {
               const postComments = commentsData?.filter((c: any) => c.post_id === post.id) || [];
               const userReaction = post.reactions?.find((r: any) => r.user_id === profile?.id);
@@ -943,8 +958,18 @@ export default function Community() {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input Area - Only for Creator */}
-          {isOwner && (
+          {/* Scroll to Bottom Button */}
+          {showScrollButton && (
+            <button
+              onClick={scrollToBottom}
+              className="absolute bottom-24 right-8 z-20 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full p-3 shadow-lg transition-all hover:scale-105"
+            >
+              <ChevronDown className="h-5 w-5" />
+            </button>
+          )}
+
+          {/* Input Area - For Creator or Members with posting permission */}
+          {canPost && (
             <div className="border-t border-border/30 bg-card/98 backdrop-blur-md p-3 shadow-card">
               <MediaPreview files={mediaFiles} onRemove={handleRemoveFile} />
               <div className="flex gap-2 items-center">

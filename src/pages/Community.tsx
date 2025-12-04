@@ -404,13 +404,12 @@ export default function Community() {
     mutationFn: async ({ commentId, emoji }: { commentId: string; emoji: string }) => {
       if (!profile) throw new Error("Not authenticated");
       
-      const { data: existingReaction } = await supabase
-        .from("comment_reactions")
-        .select("*")
-        .eq("comment_id", commentId)
-        .eq("user_id", profile.id)
-        .eq("emoji", emoji)
-        .maybeSingle();
+      // Check for existing reaction from cached data first
+      const cachedComments = queryClient.getQueryData<any[]>(["comments", id]);
+      const comment = cachedComments?.find((c: any) => c.id === commentId);
+      const existingReaction = comment?.comment_reactions?.find(
+        (r: any) => r.user_id === profile.id && r.emoji === emoji
+      );
 
       if (existingReaction) {
         const { error } = await supabase
@@ -425,14 +424,60 @@ export default function Community() {
           emoji,
           type: "like",
         });
-        if (error) throw error;
+        // Ignore duplicate key errors (happens with fast clicks)
+        if (error && error.code !== '23505') throw error;
       }
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["comments", id] });
+    onMutate: async ({ commentId, emoji }) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ["comments", id] });
+      
+      // Snapshot previous value
+      const previousComments = queryClient.getQueryData(["comments", id]);
+      
+      // Optimistically update
+      queryClient.setQueryData(["comments", id], (old: any) => {
+        if (!old) return old;
+        return old.map((comment: any) => {
+          if (comment.id !== commentId) return comment;
+          
+          const existingReaction = comment.comment_reactions?.find(
+            (r: any) => r.user_id === profile?.id && r.emoji === emoji
+          );
+          
+          if (existingReaction) {
+            return {
+              ...comment,
+              comment_reactions: comment.comment_reactions.filter((r: any) => r.id !== existingReaction.id)
+            };
+          } else {
+            return {
+              ...comment,
+              comment_reactions: [
+                ...(comment.comment_reactions || []),
+                {
+                  id: 'temp-' + Date.now(),
+                  user_id: profile?.id,
+                  emoji,
+                  type: 'like'
+                }
+              ]
+            };
+          }
+        });
+      });
+      
+      return { previousComments };
     },
-    onError: (error: any) => {
+    onError: (error: any, _, context) => {
+      // Rollback on error
+      if (context?.previousComments) {
+        queryClient.setQueryData(["comments", id], context.previousComments);
+      }
       toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["comments", id] });
     },
   });
 

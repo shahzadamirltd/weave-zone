@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_activity_log: {
+        Row: {
+          action: string
+          admin_id: string
+          created_at: string | null
+          details: Json | null
+          id: string
+          target_id: string | null
+          target_type: string | null
+        }
+        Insert: {
+          action: string
+          admin_id: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          target_id?: string | null
+          target_type?: string | null
+        }
+        Update: {
+          action?: string
+          admin_id?: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          target_id?: string | null
+          target_type?: string | null
+        }
+        Relationships: []
+      }
       comment_reactions: {
         Row: {
           comment_id: string
@@ -629,24 +659,39 @@ export type Database = {
         Row: {
           avatar_url: string | null
           bio: string | null
+          country: string | null
           created_at: string
           id: string
+          ip_address: string | null
+          last_seen_at: string | null
+          suspended: boolean | null
+          suspended_at: string | null
           updated_at: string
           username: string
         }
         Insert: {
           avatar_url?: string | null
           bio?: string | null
+          country?: string | null
           created_at?: string
           id: string
+          ip_address?: string | null
+          last_seen_at?: string | null
+          suspended?: boolean | null
+          suspended_at?: string | null
           updated_at?: string
           username: string
         }
         Update: {
           avatar_url?: string | null
           bio?: string | null
+          country?: string | null
           created_at?: string
           id?: string
+          ip_address?: string | null
+          last_seen_at?: string | null
+          suspended?: boolean | null
+          suspended_at?: string | null
           updated_at?: string
           username?: string
         }
@@ -807,6 +852,27 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -814,6 +880,13 @@ export type Database = {
     Functions: {
       has_paid_access: {
         Args: { _community_id: string; _user_id: string }
+        Returns: boolean
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
         Returns: boolean
       }
       is_community_member: {
@@ -826,6 +899,7 @@ export type Database = {
       }
     }
     Enums: {
+      app_role: "admin" | "moderator" | "user"
       pricing_type: "free" | "one_time" | "lifetime" | "recurring_monthly"
     }
     CompositeTypes: {
@@ -954,6 +1028,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["admin", "moderator", "user"],
       pricing_type: ["free", "one_time", "lifetime", "recurring_monthly"],
     },
   },

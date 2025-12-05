@@ -19,6 +19,8 @@ import Settings from "./pages/Settings";
 import Payments from "./pages/Payments";
 import Help from "./pages/Help";
 import NotFound from "./pages/NotFound";
+import AdminLogin from "./pages/AdminLogin";
+import AdminDashboard from "./pages/AdminDashboard";
 
 const queryClient = new QueryClient();
 
@@ -141,6 +143,8 @@ const App = () => (
               </ProtectedRoute>
             }
           />
+          <Route path="/admin-login" element={<AdminLogin />} />
+          <Route path="/admin" element={<AdminDashboard />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

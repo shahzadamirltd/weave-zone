@@ -7,6 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import {
   Table,
@@ -25,9 +27,15 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Users,
   DollarSign,
-  Activity,
   Shield,
   LogOut,
   Search,
@@ -39,10 +47,37 @@ import {
   Globe,
   Clock,
   TrendingUp,
-  MessageSquare,
   Loader2,
+  Plus,
+  ShieldBan,
+  Activity,
+  Radio,
 } from "lucide-react";
-import { format, subDays, startOfDay, endOfDay } from "date-fns";
+import { format, subDays, startOfDay, subMinutes } from "date-fns";
+
+const COUNTRIES = [
+  { code: "AF", name: "Afghanistan" },
+  { code: "CN", name: "China" },
+  { code: "RU", name: "Russia" },
+  { code: "IR", name: "Iran" },
+  { code: "KP", name: "North Korea" },
+  { code: "SY", name: "Syria" },
+  { code: "PK", name: "Pakistan" },
+  { code: "NG", name: "Nigeria" },
+  { code: "IN", name: "India" },
+  { code: "BD", name: "Bangladesh" },
+  { code: "VN", name: "Vietnam" },
+  { code: "ID", name: "Indonesia" },
+  { code: "PH", name: "Philippines" },
+  { code: "BR", name: "Brazil" },
+  { code: "MX", name: "Mexico" },
+  { code: "US", name: "United States" },
+  { code: "GB", name: "United Kingdom" },
+  { code: "CA", name: "Canada" },
+  { code: "AU", name: "Australia" },
+  { code: "DE", name: "Germany" },
+  { code: "FR", name: "France" },
+];
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -51,6 +86,10 @@ const AdminDashboard = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [showUserDialog, setShowUserDialog] = useState(false);
+  const [showBlockIPDialog, setShowBlockIPDialog] = useState(false);
+  const [showBlockCountryDialog, setShowBlockCountryDialog] = useState(false);
+  const [newBlockIP, setNewBlockIP] = useState({ ip: "", reason: "" });
+  const [newBlockCountry, setNewBlockCountry] = useState({ code: "", reason: "" });
 
   // Check admin status
   useEffect(() => {
@@ -90,6 +129,23 @@ const AdminDashboard = () => {
       return data;
     },
     enabled: isAdmin === true,
+  });
+
+  // Fetch active users (last 5 minutes)
+  const { data: liveUsers } = useQuery({
+    queryKey: ["admin-live-users"],
+    queryFn: async () => {
+      const fiveMinutesAgo = subMinutes(new Date(), 5).toISOString();
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .gte("last_seen_at", fiveMinutesAgo)
+        .order("last_seen_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: isAdmin === true,
+    refetchInterval: 30000, // Refresh every 30 seconds
   });
 
   // Fetch all payments
@@ -142,6 +198,34 @@ const AdminDashboard = () => {
       const { data, error } = await supabase
         .from("communities")
         .select("*, profiles:owner_id(username)")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: isAdmin === true,
+  });
+
+  // Fetch IP blocklist
+  const { data: ipBlocklist } = useQuery({
+    queryKey: ["admin-ip-blocklist"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("ip_blocklist")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: isAdmin === true,
+  });
+
+  // Fetch country blocklist
+  const { data: countryBlocklist } = useQuery({
+    queryKey: ["admin-country-blocklist"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("country_blocklist")
+        .select("*")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
@@ -202,6 +286,83 @@ const AdminDashboard = () => {
     onError: () => toast.error("Failed to delete post"),
   });
 
+  // Block IP mutation
+  const blockIPMutation = useMutation({
+    mutationFn: async ({ ip, reason }: { ip: string; reason: string }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error } = await supabase.from("ip_blocklist").insert({
+        ip_address: ip,
+        reason,
+        blocked_by: user?.id,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-ip-blocklist"] });
+      toast.success("IP blocked successfully");
+      setShowBlockIPDialog(false);
+      setNewBlockIP({ ip: "", reason: "" });
+    },
+    onError: (e: any) => toast.error(e.message || "Failed to block IP"),
+  });
+
+  // Unblock IP mutation
+  const unblockIPMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("ip_blocklist").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-ip-blocklist"] });
+      toast.success("IP unblocked");
+    },
+    onError: () => toast.error("Failed to unblock IP"),
+  });
+
+  // Block country mutation
+  const blockCountryMutation = useMutation({
+    mutationFn: async ({ code, reason }: { code: string; reason: string }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      const country = COUNTRIES.find(c => c.code === code);
+      const { error } = await supabase.from("country_blocklist").insert({
+        country_code: code,
+        country_name: country?.name || code,
+        reason,
+        blocked_by: user?.id,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-country-blocklist"] });
+      toast.success("Country blocked successfully");
+      setShowBlockCountryDialog(false);
+      setNewBlockCountry({ code: "", reason: "" });
+    },
+    onError: (e: any) => toast.error(e.message || "Failed to block country"),
+  });
+
+  // Unblock country mutation
+  const unblockCountryMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("country_blocklist").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-country-blocklist"] });
+      toast.success("Country unblocked");
+    },
+    onError: () => toast.error("Failed to unblock country"),
+  });
+
+  // Block user's IP
+  const blockUserIP = (user: any) => {
+    if (user.ip_address) {
+      blockIPMutation.mutate({ ip: user.ip_address, reason: `Blocked from user: ${user.username}` });
+    } else {
+      toast.error("User has no recorded IP address");
+    }
+  };
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate("/admin-login");
@@ -235,7 +396,9 @@ const AdminDashboard = () => {
   const filteredUsers = users?.filter(
     (u) =>
       u.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.id.includes(searchTerm)
+      u.id.includes(searchTerm) ||
+      u.ip_address?.includes(searchTerm) ||
+      u.country?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (isAdmin === null) {
@@ -258,16 +421,23 @@ const AdminDashboard = () => {
               <p className="text-sm text-muted-foreground">Platform Control Center</p>
             </div>
           </div>
-          <Button variant="outline" onClick={handleLogout}>
-            <LogOut className="h-4 w-4 mr-2" />
-            Logout
-          </Button>
+          <div className="flex items-center gap-4">
+            {/* Live Users Counter */}
+            <div className="flex items-center gap-2 bg-green-500/10 text-green-500 px-3 py-2 rounded-lg">
+              <Radio className="h-4 w-4 animate-pulse" />
+              <span className="font-semibold">{liveUsers?.length || 0} Live</span>
+            </div>
+            <Button variant="outline" onClick={handleLogout}>
+              <LogOut className="h-4 w-4 mr-2" />
+              Logout
+            </Button>
+          </div>
         </div>
       </header>
 
       <main className="container mx-auto px-4 py-6">
         {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Total Users</CardTitle>
@@ -277,6 +447,19 @@ const AdminDashboard = () => {
               <div className="text-2xl font-bold">{users?.length || 0}</div>
               <p className="text-xs text-muted-foreground">
                 {activeUsers} active, {suspendedUsers} suspended
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-green-500/30 bg-green-500/5">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Live Now</CardTitle>
+              <Activity className="h-4 w-4 text-green-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-500">{liveUsers?.length || 0}</div>
+              <p className="text-xs text-muted-foreground">
+                Active in last 5 min
               </p>
             </CardContent>
           </Card>
@@ -321,14 +504,56 @@ const AdminDashboard = () => {
           </Card>
         </div>
 
+        {/* Live Users Panel */}
+        {liveUsers && liveUsers.length > 0 && (
+          <Card className="mb-6 border-green-500/30">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Radio className="h-5 w-5 text-green-500 animate-pulse" />
+                Live Users ({liveUsers.length})
+              </CardTitle>
+              <CardDescription>Users active in the last 5 minutes</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-3">
+                {liveUsers.map((user) => (
+                  <div
+                    key={user.id}
+                    className="flex items-center gap-2 bg-card border border-border rounded-lg px-3 py-2"
+                  >
+                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                    <span className="font-medium">{user.username}</span>
+                    {user.country && (
+                      <span className="text-xs text-muted-foreground">({user.country})</span>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 w-6 p-0"
+                      onClick={() => {
+                        setSelectedUser(user);
+                        setShowUserDialog(true);
+                      }}
+                    >
+                      <Eye className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Main Tabs */}
         <Tabs defaultValue="users" className="space-y-4">
-          <TabsList className="grid grid-cols-5 w-full max-w-2xl">
+          <TabsList className="grid grid-cols-7 w-full max-w-4xl">
             <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="payments">Payments</TabsTrigger>
             <TabsTrigger value="payouts">Payouts</TabsTrigger>
             <TabsTrigger value="posts">Posts</TabsTrigger>
             <TabsTrigger value="communities">Communities</TabsTrigger>
+            <TabsTrigger value="ip-blocks">IP Blocks</TabsTrigger>
+            <TabsTrigger value="country-blocks">Countries</TabsTrigger>
           </TabsList>
 
           {/* Users Tab */}
@@ -340,7 +565,7 @@ const AdminDashboard = () => {
                 <div className="relative mt-2">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Search users..."
+                    placeholder="Search by username, ID, IP, or country..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-9"
@@ -359,6 +584,7 @@ const AdminDashboard = () => {
                         <TableHead>Username</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Country</TableHead>
+                        <TableHead>IP Address</TableHead>
                         <TableHead>Last Seen</TableHead>
                         <TableHead>Joined</TableHead>
                         <TableHead>Actions</TableHead>
@@ -380,6 +606,9 @@ const AdminDashboard = () => {
                               <Globe className="h-3 w-3" />
                               {user.country || "Unknown"}
                             </div>
+                          </TableCell>
+                          <TableCell className="font-mono text-xs">
+                            {user.ip_address || "Unknown"}
                           </TableCell>
                           <TableCell>
                             {user.last_seen_at
@@ -412,6 +641,14 @@ const AdminDashboard = () => {
                                 }
                               >
                                 <Ban className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => blockUserIP(user)}
+                                title="Block IP"
+                              >
+                                <ShieldBan className="h-4 w-4" />
                               </Button>
                             </div>
                           </TableCell>
@@ -668,6 +905,124 @@ const AdminDashboard = () => {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* IP Blocks Tab */}
+          <TabsContent value="ip-blocks">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>IP Blocklist</CardTitle>
+                  <CardDescription>Blocked IP addresses</CardDescription>
+                </div>
+                <Button onClick={() => setShowBlockIPDialog(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Block IP
+                </Button>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>IP Address</TableHead>
+                      <TableHead>Reason</TableHead>
+                      <TableHead>Blocked At</TableHead>
+                      <TableHead>Expires</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {ipBlocklist?.map((block) => (
+                      <TableRow key={block.id}>
+                        <TableCell className="font-mono">{block.ip_address}</TableCell>
+                        <TableCell>{block.reason || "No reason"}</TableCell>
+                        <TableCell>
+                          {format(new Date(block.created_at), "MMM d, yyyy HH:mm")}
+                        </TableCell>
+                        <TableCell>
+                          {block.expires_at
+                            ? format(new Date(block.expires_at), "MMM d, yyyy")
+                            : "Never"}
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => unblockIPMutation.mutate(block.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {(!ipBlocklist || ipBlocklist.length === 0) && (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                          No blocked IP addresses
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Country Blocks Tab */}
+          <TabsContent value="country-blocks">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Country Blocklist</CardTitle>
+                  <CardDescription>Blocked countries</CardDescription>
+                </div>
+                <Button onClick={() => setShowBlockCountryDialog(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Block Country
+                </Button>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Country</TableHead>
+                      <TableHead>Code</TableHead>
+                      <TableHead>Reason</TableHead>
+                      <TableHead>Blocked At</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {countryBlocklist?.map((block) => (
+                      <TableRow key={block.id}>
+                        <TableCell className="font-medium">{block.country_name}</TableCell>
+                        <TableCell>{block.country_code}</TableCell>
+                        <TableCell>{block.reason || "No reason"}</TableCell>
+                        <TableCell>
+                          {format(new Date(block.created_at), "MMM d, yyyy HH:mm")}
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => unblockCountryMutation.mutate(block.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {(!countryBlocklist || countryBlocklist.length === 0) && (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                          No blocked countries
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </main>
 
@@ -720,7 +1075,19 @@ const AdminDashboard = () => {
               )}
             </div>
           )}
-          <DialogFooter>
+          <DialogFooter className="flex gap-2">
+            {selectedUser?.ip_address && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  blockUserIP(selectedUser);
+                  setShowUserDialog(false);
+                }}
+              >
+                <ShieldBan className="h-4 w-4 mr-2" />
+                Block IP
+              </Button>
+            )}
             <Button
               variant={selectedUser?.suspended ? "default" : "destructive"}
               onClick={() => {
@@ -732,6 +1099,101 @@ const AdminDashboard = () => {
               }}
             >
               {selectedUser?.suspended ? "Unsuspend User" : "Suspend User"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Block IP Dialog */}
+      <Dialog open={showBlockIPDialog} onOpenChange={setShowBlockIPDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Block IP Address</DialogTitle>
+            <DialogDescription>
+              Add an IP address to the blocklist
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="ip">IP Address</Label>
+              <Input
+                id="ip"
+                placeholder="e.g., 192.168.1.1"
+                value={newBlockIP.ip}
+                onChange={(e) => setNewBlockIP({ ...newBlockIP, ip: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="reason">Reason (optional)</Label>
+              <Textarea
+                id="reason"
+                placeholder="Why is this IP being blocked?"
+                value={newBlockIP.reason}
+                onChange={(e) => setNewBlockIP({ ...newBlockIP, reason: e.target.value })}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowBlockIPDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => blockIPMutation.mutate(newBlockIP)}
+              disabled={!newBlockIP.ip}
+            >
+              Block IP
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Block Country Dialog */}
+      <Dialog open={showBlockCountryDialog} onOpenChange={setShowBlockCountryDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Block Country</DialogTitle>
+            <DialogDescription>
+              Add a country to the blocklist
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="country">Country</Label>
+              <Select
+                value={newBlockCountry.code}
+                onValueChange={(value) => setNewBlockCountry({ ...newBlockCountry, code: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a country" />
+                </SelectTrigger>
+                <SelectContent>
+                  {COUNTRIES.map((country) => (
+                    <SelectItem key={country.code} value={country.code}>
+                      {country.name} ({country.code})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="country-reason">Reason (optional)</Label>
+              <Textarea
+                id="country-reason"
+                placeholder="Why is this country being blocked?"
+                value={newBlockCountry.reason}
+                onChange={(e) => setNewBlockCountry({ ...newBlockCountry, reason: e.target.value })}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowBlockCountryDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => blockCountryMutation.mutate(newBlockCountry)}
+              disabled={!newBlockCountry.code}
+            >
+              Block Country
             </Button>
           </DialogFooter>
         </DialogContent>

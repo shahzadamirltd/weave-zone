@@ -249,6 +249,33 @@ export type Database = {
           },
         ]
       }
+      country_blocklist: {
+        Row: {
+          blocked_by: string | null
+          country_code: string
+          country_name: string
+          created_at: string
+          id: string
+          reason: string | null
+        }
+        Insert: {
+          blocked_by?: string | null
+          country_code: string
+          country_name: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+        }
+        Update: {
+          blocked_by?: string | null
+          country_code?: string
+          country_name?: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+        }
+        Relationships: []
+      }
       coupon_codes: {
         Row: {
           active: boolean
@@ -345,6 +372,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      ip_blocklist: {
+        Row: {
+          blocked_by: string | null
+          country: string | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          ip_address: string
+          reason: string | null
+        }
+        Insert: {
+          blocked_by?: string | null
+          country?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          ip_address: string
+          reason?: string | null
+        }
+        Update: {
+          blocked_by?: string | null
+          country?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          ip_address?: string
+          reason?: string | null
+        }
+        Relationships: []
       }
       live_streams: {
         Row: {

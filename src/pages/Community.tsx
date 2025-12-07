@@ -270,14 +270,48 @@ export default function Community() {
       });
       if (error) throw error;
     },
-    onSuccess: () => {
+    onMutate: async () => {
+      // Optimistic update - show post immediately
+      await queryClient.cancelQueries({ queryKey: ["posts", id] });
+      const previousPosts = queryClient.getQueryData(["posts", id]);
+      
+      if (profile && postContent.trim()) {
+        const optimisticPost = {
+          id: `temp-${Date.now()}`,
+          community_id: id,
+          author_id: profile.id,
+          content: postContent,
+          media_urls: null,
+          created_at: new Date().toISOString(),
+          profiles: profile,
+          reactions: [],
+        };
+        
+        queryClient.setQueryData(["posts", id], (old: any) => {
+          return [...(old || []), optimisticPost];
+        });
+      }
+      
+      // Clear form immediately for instant feedback
+      const savedContent = postContent;
       setPostContent("");
       setMediaFiles([]);
+      
+      return { previousPosts, savedContent };
+    },
+    onSuccess: () => {
       setUploading(false);
       queryClient.invalidateQueries({ queryKey: ["posts", id] });
     },
-    onError: (error: any) => {
+    onError: (error: any, _, context) => {
       setUploading(false);
+      // Restore form content on error
+      if (context?.savedContent) {
+        setPostContent(context.savedContent);
+      }
+      if (context?.previousPosts) {
+        queryClient.setQueryData(["posts", id], context.previousPosts);
+      }
       toast({ title: "Error", description: error.message, variant: "destructive" });
     },
   });

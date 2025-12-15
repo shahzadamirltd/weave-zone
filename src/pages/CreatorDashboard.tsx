@@ -1,9 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { AppLayout } from "@/components/layout/AppLayout";
+import { ChatLayout } from "@/components/layout/ChatLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, DollarSign, Users, TrendingUp } from "lucide-react";
+import { Loader2, DollarSign, Users, TrendingUp, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { PayoutRequestDialog } from "@/components/creator/PayoutRequestDialog";
 import { AnalyticsDashboard } from "@/components/creator/AnalyticsDashboard";
@@ -105,23 +105,29 @@ const CreatorDashboard = () => {
 
   if (communitiesLoading || earningsLoading) {
     return (
-      <AppLayout>
-        <div className="flex items-center justify-center min-h-screen">
-          <Loader2 className="h-8 w-8 animate-spin" />
+      <ChatLayout>
+        <div className="flex items-center justify-center h-full bg-chat-bg">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-      </AppLayout>
+      </ChatLayout>
     );
   }
 
   return (
-    <AppLayout>
-      <div className="container mx-auto p-4 space-y-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold">Creator Dashboard</h1>
-          <Button onClick={() => navigate("/create-community")}>
-            Create New Community
+    <ChatLayout>
+      <div className="flex-1 overflow-y-auto bg-chat-bg">
+        <div className="max-w-4xl mx-auto p-6 lg:p-8 pt-16 lg:pt-8 space-y-6">
+          <Button variant="ghost" onClick={() => navigate("/dashboard")} className="gap-2">
+            <ArrowLeft className="h-4 w-4" />
+            Back to Dashboard
           </Button>
-        </div>
+          
+          <div className="flex justify-between items-center">
+            <h1 className="text-2xl font-bold text-foreground">Creator Dashboard</h1>
+            <Button onClick={() => navigate("/create-community")}>
+              Create New Community
+            </Button>
+          </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
@@ -233,8 +239,9 @@ const CreatorDashboard = () => {
             </div>
           </CardContent>
         </Card>
+        </div>
       </div>
-    </AppLayout>
+    </ChatLayout>
   );
 };
 

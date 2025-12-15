@@ -1,13 +1,12 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Sidebar } from "@/components/layout/Sidebar";
+import { ChatLayout } from "@/components/layout/ChatLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Upload, Check, X, Loader2 } from "lucide-react";
 import { useHandleCheck } from "@/hooks/useHandleCheck";
@@ -186,27 +185,20 @@ export default function CreateCommunity() {
   };
 
   return (
-    <div className="flex min-h-screen bg-background">
-      <Sidebar />
-      
-      <main className="flex-1 ml-64">
-        <header className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border/50 px-8 py-4">
-          <div className="flex items-center gap-4">
-            <Button 
-              variant="ghost" 
-              size="icon"
-              onClick={() => navigate("/dashboard")}
-              className="rounded-lg"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <h1 className="text-2xl font-bold text-foreground">Create Community</h1>
-          </div>
-        </header>
+    <ChatLayout>
+      <div className="flex-1 overflow-y-auto bg-chat-bg">
+        <div className="max-w-2xl mx-auto p-6 lg:p-8 pt-16 lg:pt-8 space-y-6">
+          <Button variant="ghost" onClick={() => navigate("/dashboard")} className="gap-2">
+            <ArrowLeft className="h-4 w-4" />
+            Back to Dashboard
+          </Button>
 
-        <div className="p-8">
-          <div className="max-w-2xl">
-            <div className="border border-border rounded-2xl p-6 space-y-6 bg-card">
+          <div>
+            <h1 className="text-2xl font-bold mb-2 text-foreground">Create Community</h1>
+            <p className="text-muted-foreground">Set up your new community</p>
+          </div>
+
+          <div className="border border-border rounded-2xl p-6 space-y-6 bg-card">
               <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Avatar Upload */}
                 <div className="space-y-2">
@@ -368,7 +360,6 @@ export default function CreateCommunity() {
             </div>
           </div>
         </div>
-      </main>
-    </div>
+      </ChatLayout>
   );
 }

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Sidebar } from "@/components/layout/Sidebar";
+import { ChatLayout } from "@/components/layout/ChatLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -96,29 +96,22 @@ export default function Settings() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen bg-background">
-        <Sidebar />
-        <main className="flex-1 ml-64 flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin" />
-        </main>
-      </div>
+      <ChatLayout>
+        <div className="flex items-center justify-center h-full bg-chat-bg">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </ChatLayout>
     );
   }
 
   return (
-    <div className="flex min-h-screen bg-background">
-      <Sidebar />
-      
-      <main className="flex-1 ml-64">
-        <header className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border/50 px-8 py-4">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-foreground">Settings</h1>
-          </div>
-        </header>
+    <ChatLayout>
+      <div className="flex-1 overflow-y-auto bg-chat-bg">
+        <div className="max-w-2xl mx-auto p-6 lg:p-8 pt-16 lg:pt-8 space-y-6">
+          <h1 className="text-2xl font-bold text-foreground">Settings</h1>
 
-        <div className="p-8">
-          <div className="max-w-2xl space-y-6">
-            <Card className="border-2">
+          <Card className="border border-border/50">
+            <CardHeader>
               <CardHeader>
                 <CardTitle>Profile Settings</CardTitle>
                 <CardDescription>Update your profile information</CardDescription>
@@ -190,12 +183,29 @@ export default function Settings() {
               </CardContent>
             </Card>
 
-            <Card className="border-2 border-destructive/50">
+            <Card className="border border-destructive/50">
               <CardHeader>
-                <CardTitle className="text-destructive">Danger Zone</CardTitle>
-                <CardDescription>Irreversible actions</CardDescription>
+                <CardTitle className="text-destructive">Sign Out</CardTitle>
               </CardHeader>
               <CardContent>
+                <Button 
+                  variant="destructive" 
+                  className="w-full rounded-xl"
+                  onClick={async () => {
+                    await supabase.auth.signOut();
+                    window.location.href = "/auth";
+                  }}
+                >
+                  Sign Out
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    </ChatLayout>
+  );
+}
                 <Button 
                   variant="destructive" 
                   className="w-full rounded-xl"

@@ -137,133 +137,129 @@ export default function Profile() {
     <ChatLayout>
       <div className="flex-1 overflow-y-auto bg-chat-bg">
         <div className="max-w-2xl mx-auto p-6 lg:p-8 pt-16 lg:pt-8 space-y-6">
-  }
+          <Button variant="ghost" onClick={() => navigate("/dashboard")} className="gap-2">
+            <ArrowLeft className="h-4 w-4" />
+            Back to Dashboard
+          </Button>
 
-  return (
-    <AppLayout>
-      <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
-        <Button variant="ghost" onClick={() => navigate("/dashboard")} className="gap-2">
-          <ArrowLeft className="h-4 w-4" />
-          Back to Dashboard
-        </Button>
+          <div>
+            <h1 className="text-2xl font-bold mb-2 text-foreground">Profile Settings</h1>
+            <p className="text-muted-foreground">Manage your account information</p>
+          </div>
 
-        <div>
-          <h1 className="text-3xl font-bold mb-2">Profile Settings</h1>
-          <p className="text-muted-foreground">Manage your account information</p>
-        </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Profile Information</CardTitle>
-            <CardDescription>Update your personal details</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex items-center gap-4">
-              <Avatar className="h-20 w-20">
-                <AvatarImage src={profile.avatar_url || ""} />
-                <AvatarFallback className="text-2xl bg-gradient-primary text-primary-foreground">
-                  {profile.username?.[0]?.toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleAvatarUpload}
-                  className="hidden"
-                />
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploading}
-                  className="gap-2"
-                >
-                  <Upload className="h-4 w-4" />
-                  {uploading ? "Uploading..." : "Upload Avatar"}
-                </Button>
-                <p className="text-xs text-muted-foreground mt-1">Max 2MB</p>
-              </div>
-            </div>
-
-            {isEditing ? (
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="username">Username</Label>
-                  <Input
-                    id="username"
-                    name="username"
-                    defaultValue={profile.username}
-                    required
+          <Card className="border border-border/50">
+            <CardHeader>
+              <CardTitle>Profile Information</CardTitle>
+              <CardDescription>Update your personal details</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex items-center gap-4">
+                <Avatar className="h-20 w-20">
+                  <AvatarImage src={profile.avatar_url || ""} />
+                  <AvatarFallback className="text-2xl bg-primary/10 text-primary">
+                    {profile.username?.[0]?.toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarUpload}
+                    className="hidden"
                   />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="bio">Bio</Label>
-                  <Textarea
-                    id="bio"
-                    name="bio"
-                    defaultValue={profile.bio || ""}
-                    rows={4}
-                    maxLength={200}
-                  />
-                </div>
-
-                <div className="flex gap-3">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setIsEditing(false)}
-                    className="flex-1"
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    className="gap-2"
                   >
-                    Cancel
+                    <Upload className="h-4 w-4" />
+                    {uploading ? "Uploading..." : "Upload Avatar"}
                   </Button>
-                  <Button
-                    type="submit"
-                    disabled={updateProfileMutation.isPending}
-                    className="flex-1"
-                  >
-                    {updateProfileMutation.isPending ? "Saving..." : "Save Changes"}
-                  </Button>
+                  <p className="text-xs text-muted-foreground mt-1">Max 2MB</p>
                 </div>
-              </form>
-            ) : (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Username</Label>
-                  <p className="text-sm">{profile.username}</p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Bio</Label>
-                  <p className="text-sm text-muted-foreground">
-                    {profile.bio || "No bio added yet"}
-                  </p>
-                </div>
-
-                <Button onClick={() => setIsEditing(true)}>Edit Profile</Button>
               </div>
-            )}
-          </CardContent>
-        </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Account Actions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Button 
-              variant="destructive" 
-              className="w-full gap-2"
-              onClick={handleLogout}
-            >
-              <LogOut className="h-4 w-4" />
-              Logout
-            </Button>
-          </CardContent>
-        </Card>
+              {isEditing ? (
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="username">Username</Label>
+                    <Input
+                      id="username"
+                      name="username"
+                      defaultValue={profile.username}
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="bio">Bio</Label>
+                    <Textarea
+                      id="bio"
+                      name="bio"
+                      defaultValue={profile.bio || ""}
+                      rows={4}
+                      maxLength={200}
+                    />
+                  </div>
+
+                  <div className="flex gap-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsEditing(false)}
+                      className="flex-1"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      disabled={updateProfileMutation.isPending}
+                      className="flex-1"
+                    >
+                      {updateProfileMutation.isPending ? "Saving..." : "Save Changes"}
+                    </Button>
+                  </div>
+                </form>
+              ) : (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Username</Label>
+                    <p className="text-sm text-foreground">{profile.username}</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Bio</Label>
+                    <p className="text-sm text-muted-foreground">
+                      {profile.bio || "No bio added yet"}
+                    </p>
+                  </div>
+
+                  <Button onClick={() => setIsEditing(true)}>Edit Profile</Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="border border-destructive/50">
+            <CardHeader>
+              <CardTitle className="text-destructive">Account Actions</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Button 
+                variant="destructive" 
+                className="w-full gap-2"
+                onClick={handleLogout}
+              >
+                <LogOut className="h-4 w-4" />
+                Logout
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </ChatLayout>
+  );
 }

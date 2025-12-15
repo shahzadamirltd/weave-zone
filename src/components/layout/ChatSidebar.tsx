@@ -5,11 +5,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { 
   Search, MoreVertical, Settings, Plus, X,
   Home, CreditCard, HelpCircle, Users, Crown,
-  Radio, TrendingUp
+  TrendingUp, Camera, MessageCircle
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -29,7 +28,6 @@ export function ChatSidebar({ isOpen, onClose }: ChatSidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
-  const [isSearching, setIsSearching] = useState(false);
 
   const { data: profile } = useQuery({
     queryKey: ["profile"],
@@ -75,7 +73,7 @@ export function ChatSidebar({ isOpen, onClose }: ChatSidebarProps) {
     enabled: !!profile,
   });
 
-  // Global search for ALL communities (not just user's)
+  // Global search for ALL communities
   const { data: allCommunities } = useQuery({
     queryKey: ["all-communities-search", searchQuery],
     queryFn: async () => {
@@ -85,7 +83,7 @@ export function ChatSidebar({ isOpen, onClose }: ChatSidebarProps) {
         .from("communities")
         .select("*, profiles(*), memberships(count)")
         .ilike("name", `%${searchQuery}%`)
-        .limit(10);
+        .limit(20);
 
       return data || [];
     },
@@ -98,8 +96,7 @@ export function ChatSidebar({ isOpen, onClose }: ChatSidebarProps) {
   const filterCommunities = (communities: any[]) => {
     if (!searchQuery.trim()) return communities;
     return communities.filter((c: any) =>
-      c.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.description?.toLowerCase().includes(searchQuery.toLowerCase())
+      c.name?.toLowerCase().includes(searchQuery.toLowerCase())
     );
   };
 
@@ -109,13 +106,6 @@ export function ChatSidebar({ isOpen, onClose }: ChatSidebarProps) {
   // Filter out already joined/owned from global search
   const userCommunityIds = [...(joinedCommunities || []), ...(ownedCommunities || [])].map((c: any) => c.id);
   const discoverCommunities = (allCommunities || []).filter((c: any) => !userCommunityIds.includes(c.id));
-
-  const navItems = [
-    { icon: Home, label: "Home", path: "/dashboard" },
-    { icon: CreditCard, label: "Pay", path: "/payments" },
-    { icon: Settings, label: "Settings", path: "/settings" },
-    { icon: HelpCircle, label: "Help", path: "/help" },
-  ];
 
   const handleNavigate = (path: string) => {
     navigate(path);
@@ -132,46 +122,36 @@ export function ChatSidebar({ isOpen, onClose }: ChatSidebarProps) {
       <button
         onClick={() => handleNavigate(`/community/${community.id}`)}
         className={cn(
-          "w-full flex items-center gap-2 p-2 rounded-lg transition-colors text-left",
-          isActive ? "bg-primary/10" : "hover:bg-sidebar-accent"
+          "w-full flex items-center gap-3 px-4 py-3 transition-colors text-left border-b border-border/30",
+          isActive ? "bg-primary/5" : "hover:bg-muted/50"
         )}
       >
-        <div className="relative">
-          <Avatar className="h-10 w-10 flex-shrink-0">
-            <AvatarImage src={community.avatar_url || ""} />
-            <AvatarFallback className="bg-primary/10 text-primary font-medium text-sm">
-              {community.name?.charAt(0).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-          {/* Live indicator */}
-          {Math.random() > 0.7 && (
-            <span className="absolute -top-0.5 -right-0.5 h-3 w-3 bg-like rounded-full border-2 border-card animate-pulse" />
-          )}
-        </div>
+        <Avatar className="h-12 w-12 flex-shrink-0">
+          <AvatarImage src={community.avatar_url || ""} />
+          <AvatarFallback className="bg-muted text-muted-foreground font-medium">
+            {community.name?.charAt(0).toUpperCase()}
+          </AvatarFallback>
+        </Avatar>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between gap-1">
-            <div className="flex items-center gap-1 min-w-0">
-              <span className="font-medium text-foreground truncate text-sm">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="font-medium text-foreground truncate">
                 {community.name}
               </span>
-              {isOwner && <Crown className="h-3 w-3 text-primary flex-shrink-0" />}
+              {isOwner && <Crown className="h-3.5 w-3.5 text-primary flex-shrink-0" />}
             </div>
             {lastPost && (
-              <span className="text-[9px] text-muted-foreground flex-shrink-0">
+              <span className="text-[11px] text-muted-foreground flex-shrink-0">
                 {formatDistanceToNow(new Date(lastPost.created_at), { addSuffix: false })}
               </span>
             )}
           </div>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span className="flex items-center gap-0.5">
-              <Users className="h-2.5 w-2.5" />
-              {memberCount}
-            </span>
-            {isDiscover && ownerProfile && (
-              <span className="truncate">by {ownerProfile.username}</span>
-            )}
-            {!isDiscover && (isOwner ? "Owner" : `by ${ownerProfile?.username || "Unknown"}`)}
-          </div>
+          <p className="text-sm text-muted-foreground truncate mt-0.5">
+            {isDiscover 
+              ? `by ${ownerProfile?.username || "Unknown"} • ${memberCount} members`
+              : `${memberCount} members`
+            }
+          </p>
         </div>
       </button>
     );
@@ -188,129 +168,153 @@ export function ChatSidebar({ isOpen, onClose }: ChatSidebarProps) {
       )}
 
       <aside className={cn(
-        "fixed lg:relative inset-y-0 left-0 z-50 w-72 bg-card border-r border-sidebar-border flex flex-col transition-transform duration-300 lg:translate-x-0",
+        "fixed lg:relative inset-y-0 left-0 z-50 w-80 bg-card border-r border-border flex flex-col transition-transform duration-300 lg:translate-x-0",
         isOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         {/* Header */}
-        <div className="flex items-center justify-between p-3 border-b border-sidebar-border">
-          <h1 className="text-lg font-bold text-foreground">Communities</h1>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card">
+          <h1 className="text-xl font-semibold text-foreground">Chats</h1>
           <div className="flex items-center gap-1">
             <Button
               variant="ghost"
               size="icon"
-              className="rounded-full h-8 w-8 lg:hidden"
-              onClick={onClose}
+              className="rounded-full h-9 w-9"
+              onClick={() => handleNavigate("/create-community")}
             >
-              <X className="h-4 w-4 text-muted-foreground" />
+              <Camera className="h-5 w-5 text-muted-foreground" />
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="rounded-full h-8 w-8">
-                  <MoreVertical className="h-4 w-4 text-muted-foreground" />
+                <Button variant="ghost" size="icon" className="rounded-full h-9 w-9">
+                  <MoreVertical className="h-5 w-5 text-muted-foreground" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-44">
+              <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem onClick={() => handleNavigate("/create-community")}>
                   <Plus className="h-4 w-4 mr-2" />
                   New Community
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleNavigate("/dashboard")}>
+                  <Home className="h-4 w-4 mr-2" />
+                  Dashboard
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleNavigate("/payments")}>
+                  <CreditCard className="h-4 w-4 mr-2" />
+                  Payments
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleNavigate("/settings")}>
                   <Settings className="h-4 w-4 mr-2" />
                   Settings
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleNavigate("/help")}>
+                  <HelpCircle className="h-4 w-4 mr-2" />
+                  Help
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-full h-9 w-9 lg:hidden"
+              onClick={onClose}
+            >
+              <X className="h-5 w-5 text-muted-foreground" />
+            </Button>
           </div>
         </div>
 
         {/* Search */}
-        <div className="p-2">
+        <div className="px-3 py-2 border-b border-border/50">
           <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search all communities..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-8 bg-muted border-0 rounded-lg h-9 text-sm"
+              className="pl-10 bg-muted border-0 rounded-lg h-10"
             />
           </div>
         </div>
 
         {/* Communities List */}
-        <div className="flex-1 overflow-y-auto px-2">
+        <div className="flex-1 overflow-y-auto">
           {isLoading ? (
-            <div className="space-y-1 p-2">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="flex items-center gap-2 p-2">
-                  <div className="h-10 w-10 rounded-full bg-muted animate-pulse" />
-                  <div className="flex-1 space-y-1">
-                    <div className="h-3 w-20 bg-muted animate-pulse rounded" />
-                    <div className="h-2 w-16 bg-muted animate-pulse rounded" />
+            <div className="space-y-0">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="flex items-center gap-3 px-4 py-3 border-b border-border/30">
+                  <div className="h-12 w-12 rounded-full bg-muted animate-pulse" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 w-24 bg-muted animate-pulse rounded" />
+                    <div className="h-3 w-32 bg-muted animate-pulse rounded" />
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="space-y-3 pb-2">
+            <div>
               {/* Discover Communities from Search */}
               {searchQuery.length >= 2 && discoverCommunities.length > 0 && (
                 <div>
-                  <h3 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide px-2 mb-1 flex items-center gap-1">
-                    <TrendingUp className="h-3 w-3" />
-                    Discover
-                  </h3>
-                  <div className="space-y-0.5">
-                    {discoverCommunities.map((community: any) => (
-                      <CommunityItem key={community.id} community={community} isOwner={false} isDiscover />
-                    ))}
+                  <div className="px-4 py-2 bg-muted/50">
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+                      <TrendingUp className="h-3 w-3" />
+                      Discover
+                    </span>
                   </div>
+                  {discoverCommunities.map((community: any) => (
+                    <CommunityItem key={community.id} community={community} isOwner={false} isDiscover />
+                  ))}
                 </div>
               )}
 
               {/* Joined Communities */}
               {filteredJoined.length > 0 && (
                 <div>
-                  <h3 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide px-2 mb-1">
-                    Joined ({filteredJoined.length})
-                  </h3>
-                  <div className="space-y-0.5">
-                    {filteredJoined.map((community: any) => (
-                      <CommunityItem key={community.id} community={community} isOwner={false} />
-                    ))}
-                  </div>
+                  {(filteredOwned.length > 0 || discoverCommunities.length > 0) && (
+                    <div className="px-4 py-2 bg-muted/50">
+                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        Joined ({filteredJoined.length})
+                      </span>
+                    </div>
+                  )}
+                  {filteredJoined.map((community: any) => (
+                    <CommunityItem key={community.id} community={community} isOwner={false} />
+                  ))}
                 </div>
               )}
 
               {/* Owned Communities */}
               {filteredOwned.length > 0 && (
                 <div>
-                  <h3 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide px-2 mb-1">
-                    Created ({filteredOwned.length})
-                  </h3>
-                  <div className="space-y-0.5">
-                    {filteredOwned.map((community: any) => (
-                      <CommunityItem key={community.id} community={community} isOwner={true} />
-                    ))}
-                  </div>
+                  {(filteredJoined.length > 0 || discoverCommunities.length > 0) && (
+                    <div className="px-4 py-2 bg-muted/50">
+                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        Created ({filteredOwned.length})
+                      </span>
+                    </div>
+                  )}
+                  {filteredOwned.map((community: any) => (
+                    <CommunityItem key={community.id} community={community} isOwner={true} />
+                  ))}
                 </div>
               )}
 
               {/* Empty State */}
               {filteredJoined.length === 0 && filteredOwned.length === 0 && discoverCommunities.length === 0 && (
-                <div className="flex flex-col items-center justify-center p-6 text-center">
-                  <Users className="h-10 w-10 text-muted-foreground/30 mb-3" />
-                  <p className="text-muted-foreground text-sm">
+                <div className="flex flex-col items-center justify-center p-8 text-center">
+                  <MessageCircle className="h-12 w-12 text-muted-foreground/30 mb-4" />
+                  <p className="text-muted-foreground">
                     {searchQuery ? "No communities found" : "No communities yet"}
                   </p>
                   {searchQuery.length > 0 && searchQuery.length < 2 && (
                     <p className="text-xs text-muted-foreground/70 mt-1">Type 2+ characters to search</p>
                   )}
                   <Button
-                    variant="link"
                     onClick={() => handleNavigate("/create-community")}
-                    className="mt-2 text-primary text-sm"
+                    className="mt-4"
                   >
-                    Create your first community
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Community
                   </Button>
                 </div>
               )}
@@ -318,38 +322,27 @@ export function ChatSidebar({ isOpen, onClose }: ChatSidebarProps) {
           )}
         </div>
 
-        {/* Bottom Navigation - Compact */}
-        <div className="border-t border-sidebar-border p-1.5">
-          <div className="grid grid-cols-4 gap-0.5">
-            {navItems.map((item) => {
-              const isActive = location.pathname === item.path;
-              return (
-                <button
-                  key={item.path}
-                  onClick={() => handleNavigate(item.path)}
-                  className={cn(
-                    "flex flex-col items-center gap-0.5 p-1.5 rounded-lg transition-colors",
-                    isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted"
-                  )}
-                >
-                  <item.icon className="h-4 w-4" />
-                  <span className="text-[9px] font-medium">{item.label}</span>
-                </button>
-              );
-            })}
+        {/* User Profile Footer */}
+        {profile && (
+          <div className="border-t border-border p-3">
+            <button 
+              onClick={() => handleNavigate("/settings")}
+              className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors"
+            >
+              <Avatar className="h-10 w-10">
+                <AvatarImage src={profile.avatar_url || ""} />
+                <AvatarFallback className="bg-primary/10 text-primary">
+                  {profile.username?.[0]?.toUpperCase() || "U"}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 text-left">
+                <p className="font-medium text-sm">{profile.username}</p>
+                <p className="text-xs text-muted-foreground">My Account</p>
+              </div>
+              <Settings className="h-4 w-4 text-muted-foreground" />
+            </button>
           </div>
-        </div>
-
-        {/* Create Button - Compact */}
-        <div className="p-2 border-t border-sidebar-border">
-          <Button
-            onClick={() => handleNavigate("/create-community")}
-            className="w-full rounded-lg py-2 h-9 text-sm"
-          >
-            <Plus className="h-4 w-4 mr-1" />
-            New Community
-          </Button>
-        </div>
+        )}
       </aside>
     </>
   );

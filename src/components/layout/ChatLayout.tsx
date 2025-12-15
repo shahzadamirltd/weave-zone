@@ -24,9 +24,13 @@ export function ChatLayout({ children, showSidebar = true }: ChatLayoutProps) {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         setUserId(session.user.id);
-        // Only show onboarding for NEW users who haven't completed it
+        // Check if user is new (created within last 5 minutes) and hasn't completed onboarding
+        const createdAt = new Date(session.user.created_at);
+        const now = new Date();
+        const isNewUser = (now.getTime() - createdAt.getTime()) < 5 * 60 * 1000;
         const hasCompleted = localStorage.getItem(`${ONBOARDING_KEY}_${session.user.id}`);
-        if (!hasCompleted) {
+        
+        if (isNewUser && !hasCompleted) {
           setShowOnboarding(true);
         }
       }
@@ -56,10 +60,10 @@ export function ChatLayout({ children, showSidebar = true }: ChatLayoutProps) {
           <Button
             variant="ghost"
             size="icon"
-            className="fixed top-3 left-3 z-30 lg:hidden bg-card shadow-sm rounded-full h-9 w-9"
+            className="fixed top-4 left-4 z-30 lg:hidden bg-card shadow-md rounded-full h-10 w-10"
             onClick={() => setSidebarOpen(true)}
           >
-            <Menu className="h-4 w-4" />
+            <Menu className="h-5 w-5" />
           </Button>
           <ChatSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         </>

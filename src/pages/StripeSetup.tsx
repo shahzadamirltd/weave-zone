@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { AppLayout } from "@/components/layout/AppLayout";
+import { ChatLayout } from "@/components/layout/ChatLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, CheckCircle } from "lucide-react";
+import { Loader2, CheckCircle, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const StripeSetup = () => {
@@ -75,23 +75,27 @@ const StripeSetup = () => {
 
   if (isLoading) {
     return (
-      <AppLayout>
-        <div className="flex items-center justify-center min-h-screen">
-          <Loader2 className="h-8 w-8 animate-spin" />
+      <ChatLayout>
+        <div className="flex items-center justify-center h-full bg-chat-bg">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-      </AppLayout>
+      </ChatLayout>
     );
   }
 
   return (
-    <AppLayout>
-      <div className="container mx-auto p-4 max-w-4xl">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold mb-2">Stripe Setup</h1>
-          <p className="text-muted-foreground">
-            Create Stripe products and prices for your paid communities
-          </p>
-        </div>
+    <ChatLayout>
+      <div className="flex-1 overflow-y-auto bg-chat-bg">
+        <div className="max-w-4xl mx-auto p-6 lg:p-8 pt-16 lg:pt-8 space-y-6">
+          <Button variant="ghost" onClick={() => navigate("/dashboard")} className="gap-2">
+            <ArrowLeft className="h-4 w-4" />
+            Back to Dashboard
+          </Button>
+
+          <div>
+            <h1 className="text-2xl font-bold mb-2 text-foreground">Stripe Setup</h1>
+            <p className="text-muted-foreground">Create Stripe products and prices for your paid communities</p>
+          </div>
 
         {!communities?.length && (
           <Card>
@@ -159,14 +163,9 @@ const StripeSetup = () => {
             </Card>
           ))}
         </div>
-
-        <div className="mt-6">
-          <Button variant="outline" onClick={() => navigate("/dashboard")}>
-            ← Back to Dashboard
-          </Button>
         </div>
       </div>
-    </AppLayout>
+    </ChatLayout>
   );
 };
 

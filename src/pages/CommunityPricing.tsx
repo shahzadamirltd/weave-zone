@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { AppLayout } from "@/components/layout/AppLayout";
-import { Loader2, Check } from "lucide-react";
+import { ChatLayout } from "@/components/layout/ChatLayout";
+import { Loader2, Check, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const CommunityPricing = () => {
@@ -80,21 +80,21 @@ const CommunityPricing = () => {
 
   if (isLoading) {
     return (
-      <AppLayout>
-        <div className="flex items-center justify-center min-h-screen">
-          <Loader2 className="h-8 w-8 animate-spin" />
+      <ChatLayout>
+        <div className="flex items-center justify-center h-full bg-chat-bg">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-      </AppLayout>
+      </ChatLayout>
     );
   }
 
   if (!community) {
     return (
-      <AppLayout>
-        <div className="container mx-auto p-4">
-          <p>Community not found</p>
+      <ChatLayout>
+        <div className="flex-1 overflow-y-auto bg-chat-bg p-6">
+          <p className="text-muted-foreground">Community not found</p>
         </div>
-      </AppLayout>
+      </ChatLayout>
     );
   }
 
@@ -106,11 +106,13 @@ const CommunityPricing = () => {
   };
 
   return (
-    <AppLayout>
-      <div className="container mx-auto p-4 max-w-2xl">
-        <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4">
-          ← Back
-        </Button>
+    <ChatLayout>
+      <div className="flex-1 overflow-y-auto bg-chat-bg">
+        <div className="max-w-2xl mx-auto p-6 lg:p-8 pt-16 lg:pt-8 space-y-6">
+          <Button variant="ghost" onClick={() => navigate(-1)} className="gap-2">
+            <ArrowLeft className="h-4 w-4" />
+            Back
+          </Button>
 
         <Card>
           <CardHeader>
@@ -186,8 +188,9 @@ const CommunityPricing = () => {
             </Button>
           </CardFooter>
         </Card>
+        </div>
       </div>
-    </AppLayout>
+    </ChatLayout>
   );
 };
 

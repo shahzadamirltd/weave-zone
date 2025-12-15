@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Sidebar } from "@/components/layout/Sidebar";
+import { ChatLayout } from "@/components/layout/ChatLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -209,38 +209,30 @@ export default function EditCommunity() {
 
   if (!community) {
     return (
-      <div className="flex min-h-screen bg-background">
-        <Sidebar />
-        <main className="flex-1 ml-64 flex items-center justify-center">
+      <ChatLayout>
+        <div className="flex items-center justify-center h-full bg-chat-bg">
           <p className="text-muted-foreground">Loading...</p>
-        </main>
-      </div>
+        </div>
+      </ChatLayout>
     );
   }
 
   return (
-    <div className="flex min-h-screen bg-background">
-      <Sidebar />
-      
-      <main className="flex-1 ml-64">
-        <header className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border/50 px-8 py-4">
-          <div className="flex items-center gap-4">
-            <Button 
-              variant="ghost" 
-              size="icon"
-              onClick={() => navigate(`/community/${id}`)}
-              className="rounded-lg"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <h1 className="text-2xl font-bold text-foreground">Edit Community</h1>
-          </div>
-        </header>
+    <ChatLayout>
+      <div className="flex-1 overflow-y-auto bg-chat-bg">
+        <div className="max-w-2xl mx-auto p-6 lg:p-8 pt-16 lg:pt-8 space-y-6">
+          <Button variant="ghost" onClick={() => navigate(`/community/${id}`)} className="gap-2">
+            <ArrowLeft className="h-4 w-4" />
+            Back to Community
+          </Button>
 
-        <div className="p-8">
-          <div className="max-w-2xl">
-            <div className="border border-border rounded-2xl p-6 space-y-6 bg-card">
-              <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <h1 className="text-2xl font-bold mb-2 text-foreground">Edit Community</h1>
+            <p className="text-muted-foreground">Update your community settings</p>
+          </div>
+
+          <div className="border border-border rounded-2xl p-6 space-y-6 bg-card">
+            <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Avatar Upload */}
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Community Image</Label>
@@ -449,7 +441,6 @@ export default function EditCommunity() {
             </div>
           </div>
         </div>
-      </main>
-    </div>
+      </ChatLayout>
   );
 }

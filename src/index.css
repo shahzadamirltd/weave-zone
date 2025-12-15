@@ -17,9 +17,10 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 220 15% 20%;
 
-    --primary: 145 65% 42%;
+    /* Primary = Blue */
+    --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 145 65% 52%;
+    --primary-glow: 217 91% 70%;
 
     --secondary: 40 25% 92%;
     --secondary-foreground: 220 15% 20%;
@@ -33,9 +34,17 @@ All colors MUST be HSL.
     --destructive: 0 70% 50%;
     --destructive-foreground: 0 0% 100%;
 
+    /* Like color = Red */
+    --like: 0 84% 60%;
+    --like-foreground: 0 0% 100%;
+
+    /* Success = Green */
+    --success: 145 65% 42%;
+    --success-foreground: 0 0% 100%;
+
     --border: 40 15% 88%;
     --input: 40 15% 94%;
-    --ring: 145 65% 42%;
+    --ring: 217 91% 60%;
 
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 220 15% 20%;
@@ -44,71 +53,80 @@ All colors MUST be HSL.
     --sidebar-border: 40 15% 90%;
 
     --chat-bg: 38 22% 91%;
-    --chat-outgoing: 85 50% 88%;
+    --chat-outgoing: 145 50% 88%;
     --chat-incoming: 0 0% 100%;
 
     --radius: 0.75rem;
 
-    --gradient-primary: linear-gradient(135deg, hsl(145 65% 42%) 0%, hsl(145 65% 52%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(217 91% 60%) 0%, hsl(217 91% 70%) 100%);
     --gradient-secondary: linear-gradient(135deg, hsl(40 20% 96%) 0%, hsl(40 25% 92%) 100%);
     --gradient-accent: linear-gradient(135deg, hsl(40 20% 90%) 0%, hsl(40 25% 88%) 100%);
     --gradient-background: hsl(38 22% 91%);
     
     --shadow-elegant: 0 1px 3px hsl(220 15% 20% / 0.08);
     --shadow-card: 0 1px 2px hsl(220 15% 20% / 0.05);
-    --shadow-glow: 0 4px 12px hsl(145 65% 42% / 0.15);
+    --shadow-glow: 0 4px 12px hsl(217 91% 60% / 0.15);
     --shadow-elevated: 0 4px 12px hsl(220 15% 20% / 0.1);
   }
 
   .dark {
-    --background: 40 20% 96%;
-    --foreground: 220 15% 20%;
+    --background: 220 15% 10%;
+    --foreground: 40 20% 96%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 220 15% 20%;
+    --card: 220 15% 15%;
+    --card-foreground: 40 20% 96%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 220 15% 20%;
+    --popover: 220 15% 15%;
+    --popover-foreground: 40 20% 96%;
 
-    --primary: 145 65% 42%;
+    /* Primary = Blue */
+    --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 145 65% 52%;
+    --primary-glow: 217 91% 70%;
 
-    --secondary: 40 25% 92%;
-    --secondary-foreground: 220 15% 20%;
+    --secondary: 220 15% 20%;
+    --secondary-foreground: 40 20% 96%;
 
-    --muted: 40 15% 94%;
-    --muted-foreground: 220 10% 45%;
+    --muted: 220 15% 18%;
+    --muted-foreground: 40 10% 60%;
 
-    --accent: 40 20% 90%;
-    --accent-foreground: 220 15% 20%;
+    --accent: 220 15% 22%;
+    --accent-foreground: 40 20% 96%;
 
     --destructive: 0 70% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 40 15% 88%;
-    --input: 40 15% 94%;
-    --ring: 145 65% 42%;
+    /* Like color = Red */
+    --like: 0 84% 60%;
+    --like-foreground: 0 0% 100%;
 
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 220 15% 20%;
-    --sidebar-accent: 40 20% 96%;
-    --sidebar-accent-foreground: 220 15% 20%;
-    --sidebar-border: 40 15% 90%;
+    /* Success = Green */
+    --success: 145 65% 42%;
+    --success-foreground: 0 0% 100%;
 
-    --chat-bg: 38 22% 91%;
-    --chat-outgoing: 85 50% 88%;
-    --chat-incoming: 0 0% 100%;
+    --border: 220 15% 25%;
+    --input: 220 15% 18%;
+    --ring: 217 91% 60%;
 
-    --gradient-primary: linear-gradient(135deg, hsl(145 65% 42%) 0%, hsl(145 65% 52%) 100%);
-    --gradient-secondary: linear-gradient(135deg, hsl(40 20% 96%) 0%, hsl(40 25% 92%) 100%);
-    --gradient-accent: linear-gradient(135deg, hsl(40 20% 90%) 0%, hsl(40 25% 88%) 100%);
-    --gradient-background: hsl(38 22% 91%);
+    --sidebar-background: 220 15% 12%;
+    --sidebar-foreground: 40 20% 96%;
+    --sidebar-accent: 220 15% 18%;
+    --sidebar-accent-foreground: 40 20% 96%;
+    --sidebar-border: 220 15% 20%;
+
+    --chat-bg: 220 15% 8%;
+    --chat-outgoing: 145 40% 25%;
+    --chat-incoming: 220 15% 18%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(217 91% 60%) 0%, hsl(217 91% 70%) 100%);
+    --gradient-secondary: linear-gradient(135deg, hsl(220 15% 15%) 0%, hsl(220 15% 20%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(220 15% 18%) 0%, hsl(220 15% 22%) 100%);
+    --gradient-background: hsl(220 15% 8%);
     
-    --shadow-elegant: 0 1px 3px hsl(220 15% 20% / 0.08);
-    --shadow-card: 0 1px 2px hsl(220 15% 20% / 0.05);
-    --shadow-glow: 0 4px 12px hsl(145 65% 42% / 0.15);
-    --shadow-elevated: 0 4px 12px hsl(220 15% 20% / 0.1);
+    --shadow-elegant: 0 1px 3px hsl(0 0% 0% / 0.3);
+    --shadow-card: 0 1px 2px hsl(0 0% 0% / 0.2);
+    --shadow-glow: 0 4px 12px hsl(217 91% 60% / 0.2);
+    --shadow-elevated: 0 4px 12px hsl(0 0% 0% / 0.3);
   }
 }
 
@@ -178,5 +196,24 @@ All colors MUST be HSL.
 
   .hover-glow:hover {
     box-shadow: var(--shadow-glow);
+  }
+
+  /* Animation */
+  @keyframes fade-in {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes bounce-scale {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.3s ease-out;
+  }
+
+  .animate-bounce-scale {
+    animation: bounce-scale 0.15s ease-out;
   }
 }

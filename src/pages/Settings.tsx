@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ChatLayout } from "@/components/layout/ChatLayout";
@@ -18,6 +18,14 @@ export default function Settings() {
   const [bio, setBio] = useState("");
   const [uploading, setUploading] = useState(false);
 
+  const { data: user } = useQuery({
+    queryKey: ["auth-user"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      return user;
+    },
+  });
+
   const { data: profile, isLoading } = useQuery({
     queryKey: ["profile"],
     queryFn: async () => {
@@ -30,14 +38,23 @@ export default function Settings() {
         .eq("id", user.id)
         .single();
 
-      if (data) {
-        setUsername(data.username || "");
-        setBio(data.bio || "");
-      }
-
       return data;
     },
   });
+
+  // Set username from email if profile exists but username is empty
+  useEffect(() => {
+    if (profile) {
+      if (profile.username) {
+        setUsername(profile.username);
+      } else if (user?.email) {
+        // Auto-set username from email
+        const emailUsername = user.email.split('@')[0];
+        setUsername(emailUsername);
+      }
+      setBio(profile.bio || "");
+    }
+  }, [profile, user]);
 
   const updateProfileMutation = useMutation({
     mutationFn: async (updates: any) => {
@@ -120,7 +137,7 @@ export default function Settings() {
                 <Avatar className="h-20 w-20">
                   <AvatarImage src={profile?.avatar_url} />
                   <AvatarFallback className="text-2xl bg-primary/10 text-primary">
-                    {profile?.username?.charAt(0).toUpperCase() || "U"}
+                    {profile?.username?.charAt(0).toUpperCase() || username?.charAt(0)?.toUpperCase() || "U"}
                   </AvatarFallback>
                 </Avatar>
                 <div>
@@ -144,6 +161,17 @@ export default function Settings() {
               <Separator />
 
               <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  value={user?.email || ""}
+                  disabled
+                  className="rounded-xl bg-muted"
+                />
+                <p className="text-xs text-muted-foreground">Email cannot be changed</p>
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="username">Username</Label>
                 <Input
                   id="username"
@@ -152,6 +180,9 @@ export default function Settings() {
                   placeholder="Enter your username"
                   className="rounded-xl"
                 />
+                <p className="text-xs text-muted-foreground">
+                  {!profile?.username && user?.email && `Default: ${user.email.split('@')[0]}`}
+                </p>
               </div>
 
               <div className="space-y-2">

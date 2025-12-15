@@ -4,6 +4,7 @@ import { ChatSidebar } from "./ChatSidebar";
 import { Button } from "@/components/ui/button";
 import { Menu } from "lucide-react";
 import { Onboarding } from "@/components/Onboarding";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ChatLayoutProps {
   children: React.ReactNode;
@@ -13,14 +14,25 @@ interface ChatLayoutProps {
 export function ChatLayout({ children, showSidebar = true }: ChatLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const location = useLocation();
 
   useEffect(() => {
-    // Check if this is the first visit
-    const hasSeenOnboarding = localStorage.getItem("hasSeenOnboarding");
-    if (!hasSeenOnboarding) {
-      setShowOnboarding(true);
-    }
+    // Check authentication status first
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setIsAuthenticated(!!session);
+      
+      // Only show onboarding for authenticated users who haven't seen it
+      if (session) {
+        const hasSeenOnboarding = localStorage.getItem("hasSeenOnboarding");
+        if (!hasSeenOnboarding) {
+          setShowOnboarding(true);
+        }
+      }
+    };
+    
+    checkAuth();
   }, []);
 
   const handleOnboardingComplete = () => {
@@ -33,12 +45,12 @@ export function ChatLayout({ children, showSidebar = true }: ChatLayoutProps) {
     setSidebarOpen(false);
   }, [location.pathname]);
 
-  if (showOnboarding) {
+  if (showOnboarding && isAuthenticated) {
     return <Onboarding onComplete={handleOnboardingComplete} />;
   }
 
   return (
-    <div className="flex h-screen bg-chat-bg overflow-hidden">
+    <div className="flex h-screen bg-chat-bg overflow-hidden w-full">
       {showSidebar && (
         <>
           {/* Mobile menu button */}

@@ -1,19 +1,17 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ChatLayout } from "@/components/layout/ChatLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Share2, Check, Settings, Users, MessageCircle, ChevronRight } from "lucide-react";
+import { Share2, Check, Settings, Users, MessageCircle, ChevronRight, Crown, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
-import { formatDistanceToNow } from "date-fns";
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
 
   const { data: profile } = useQuery({
     queryKey: ["profile"],
@@ -31,36 +29,46 @@ export default function Dashboard() {
     },
   });
 
-  const { data: communities, isLoading } = useQuery({
-    queryKey: ["all-communities", profile?.id],
+  // Get joined communities (not owner)
+  const { data: joinedCommunities, isLoading: loadingJoined } = useQuery({
+    queryKey: ["joined-communities", profile?.id],
     queryFn: async () => {
       if (!profile) return [];
-
-      // Get owned communities
-      const { data: owned } = await supabase
-        .from("communities")
-        .select("*, memberships(count)")
-        .eq("owner_id", profile.id)
-        .order("created_at", { ascending: false });
-
-      // Get joined communities
+      
       const { data: memberships } = await supabase
         .from("memberships")
-        .select(`community_id, communities(*, memberships(count))`)
+        .select(`community_id, communities(*, profiles(*), memberships(count))`)
         .eq("user_id", profile.id)
         .neq("role", "owner");
 
-      const joined = memberships?.map(m => (m as any).communities).filter(Boolean) || [];
-      
-      return [...(owned || []), ...joined];
+      return memberships?.map(m => (m as any).communities).filter(Boolean) || [];
     },
     enabled: !!profile,
   });
 
-  const CommunityCard = ({ community }: { community: any }) => {
+  // Get owned communities
+  const { data: ownedCommunities, isLoading: loadingOwned } = useQuery({
+    queryKey: ["owned-communities", profile?.id],
+    queryFn: async () => {
+      if (!profile) return [];
+      
+      const { data } = await supabase
+        .from("communities")
+        .select("*, profiles(*), memberships(count)")
+        .eq("owner_id", profile.id)
+        .order("created_at", { ascending: false });
+
+      return data || [];
+    },
+    enabled: !!profile,
+  });
+
+  const isLoading = loadingJoined || loadingOwned;
+
+  const CommunityCard = ({ community, isOwner }: { community: any; isOwner: boolean }) => {
     const [copied, setCopied] = useState(false);
     const memberCount = community.memberships?.[0]?.count || 0;
-    const isOwner = community.owner_id === profile?.id;
+    const ownerProfile = community.profiles;
 
     const handleShare = (e: React.MouseEvent) => {
       e.stopPropagation();
@@ -87,9 +95,7 @@ export default function Dashboard() {
           <div className="flex items-center gap-2 mb-1">
             <h3 className="font-semibold text-foreground truncate">{community.name}</h3>
             {isOwner && (
-              <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-primary/10 text-primary">
-                Owner
-              </Badge>
+              <Crown className="h-4 w-4 text-primary flex-shrink-0" />
             )}
           </div>
           <div className="flex items-center gap-3 text-sm text-muted-foreground">
@@ -101,6 +107,9 @@ export default function Dashboard() {
               <MessageCircle className="h-3.5 w-3.5" />
               {community.pricing_type === "free" ? "Free" : `$${(community.price_amount / 100).toFixed(0)}`}
             </span>
+            {!isOwner && ownerProfile && (
+              <span className="text-xs">by {ownerProfile.username}</span>
+            )}
           </div>
         </div>
 
@@ -125,7 +134,7 @@ export default function Dashboard() {
             onClick={handleShare}
           >
             {copied ? (
-              <Check className="h-4 w-4 text-primary" />
+              <Check className="h-4 w-4 text-success" />
             ) : (
               <Share2 className="h-4 w-4 text-muted-foreground" />
             )}
@@ -152,43 +161,78 @@ export default function Dashboard() {
               </p>
             </div>
 
-            {/* Communities */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-                  Your Communities
-                </h2>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => navigate("/create-community")}
-                  className="text-primary"
-                >
-                  + New
-                </Button>
-              </div>
+            {/* Quick Actions */}
+            <div className="flex gap-3 mb-8">
+              <Button
+                onClick={() => navigate("/create-community")}
+                className="rounded-xl"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Create Community
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => navigate("/settings")}
+                className="rounded-xl"
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Settings
+              </Button>
+            </div>
 
+            {/* Communities */}
+            <div className="space-y-6">
               {isLoading ? (
                 <div className="space-y-3">
                   {[1, 2, 3].map((i) => (
                     <div key={i} className="h-20 bg-card rounded-xl animate-pulse" />
                   ))}
                 </div>
-              ) : communities && communities.length > 0 ? (
-                communities.map((community: any) => (
-                  <CommunityCard key={community.id} community={community} />
-                ))
               ) : (
-                <div className="text-center py-16 bg-card rounded-xl border border-dashed border-border">
-                  <MessageCircle className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-                  <h3 className="font-medium text-foreground mb-2">No communities yet</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Create your first community to get started
-                  </p>
-                  <Button onClick={() => navigate("/create-community")}>
-                    Create Community
-                  </Button>
-                </div>
+                <>
+                  {/* Joined Communities (First) */}
+                  {joinedCommunities && joinedCommunities.length > 0 && (
+                    <div>
+                      <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-3">
+                        Joined Communities
+                      </h2>
+                      <div className="space-y-3">
+                        {joinedCommunities.map((community: any) => (
+                          <CommunityCard key={community.id} community={community} isOwner={false} />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Owned Communities (Second) */}
+                  {ownedCommunities && ownedCommunities.length > 0 && (
+                    <div>
+                      <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-3">
+                        Your Communities
+                      </h2>
+                      <div className="space-y-3">
+                        {ownedCommunities.map((community: any) => (
+                          <CommunityCard key={community.id} community={community} isOwner={true} />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Empty State */}
+                  {(!joinedCommunities || joinedCommunities.length === 0) && 
+                   (!ownedCommunities || ownedCommunities.length === 0) && (
+                    <div className="text-center py-16 bg-card rounded-xl border border-dashed border-border">
+                      <MessageCircle className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+                      <h3 className="font-medium text-foreground mb-2">No communities yet</h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Create your first community to get started
+                      </p>
+                      <Button onClick={() => navigate("/create-community")}>
+                        Create Community
+                      </Button>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>

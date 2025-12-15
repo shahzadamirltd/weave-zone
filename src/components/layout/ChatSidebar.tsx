@@ -5,9 +5,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { 
-  Search, MoreVertical, MessageCircle, Settings, Plus, Menu, X,
-  Home, CreditCard, HelpCircle, Users
+  Search, MoreVertical, Settings, Plus, X,
+  Home, CreditCard, HelpCircle, Users, Crown
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -38,35 +39,53 @@ export function ChatSidebar({ isOpen, onClose }: ChatSidebarProps) {
     },
   });
 
-  const { data: communities, isLoading } = useQuery({
-    queryKey: ["all-communities", profile?.id],
+  // Get joined communities (not owner)
+  const { data: joinedCommunities, isLoading: loadingJoined } = useQuery({
+    queryKey: ["joined-communities", profile?.id],
     queryFn: async () => {
       if (!profile) return [];
       
-      // Get owned communities
-      const { data: owned } = await supabase
-        .from("communities")
-        .select("*, memberships(count), posts(created_at)")
-        .eq("owner_id", profile.id)
-        .order("created_at", { ascending: false });
-
-      // Get joined communities
       const { data: memberships } = await supabase
         .from("memberships")
-        .select(`community_id, communities(*, memberships(count), posts(created_at))`)
+        .select(`community_id, communities(*, profiles(*), memberships(count), posts(created_at))`)
         .eq("user_id", profile.id)
         .neq("role", "owner");
 
-      const joined = memberships?.map(m => (m as any).communities).filter(Boolean) || [];
-      
-      return [...(owned || []), ...joined];
+      return memberships?.map(m => (m as any).communities).filter(Boolean) || [];
     },
     enabled: !!profile,
   });
 
-  const filteredCommunities = communities?.filter((c: any) =>
-    c.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Get owned communities
+  const { data: ownedCommunities, isLoading: loadingOwned } = useQuery({
+    queryKey: ["owned-communities", profile?.id],
+    queryFn: async () => {
+      if (!profile) return [];
+      
+      const { data } = await supabase
+        .from("communities")
+        .select("*, profiles(*), memberships(count), posts(created_at)")
+        .eq("owner_id", profile.id)
+        .order("created_at", { ascending: false });
+
+      return data || [];
+    },
+    enabled: !!profile,
+  });
+
+  const isLoading = loadingJoined || loadingOwned;
+
+  // Filter communities based on search
+  const filterCommunities = (communities: any[]) => {
+    if (!searchQuery.trim()) return communities;
+    return communities.filter((c: any) =>
+      c.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.description?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  };
+
+  const filteredJoined = filterCommunities(joinedCommunities || []);
+  const filteredOwned = filterCommunities(ownedCommunities || []);
 
   const navItems = [
     { icon: Home, label: "Dashboard", path: "/dashboard" },
@@ -78,6 +97,49 @@ export function ChatSidebar({ isOpen, onClose }: ChatSidebarProps) {
   const handleNavigate = (path: string) => {
     navigate(path);
     onClose();
+  };
+
+  const CommunityItem = ({ community, isOwner }: { community: any; isOwner: boolean }) => {
+    const isActive = location.pathname === `/community/${community.id}`;
+    const lastPost = community.posts?.[0];
+    const ownerProfile = community.profiles;
+    
+    return (
+      <button
+        onClick={() => handleNavigate(`/community/${community.id}`)}
+        className={cn(
+          "w-full flex items-center gap-3 p-3 rounded-xl transition-colors text-left",
+          isActive ? "bg-primary/10" : "hover:bg-sidebar-accent"
+        )}
+      >
+        <Avatar className="h-12 w-12 flex-shrink-0">
+          <AvatarImage src={community.avatar_url || ""} />
+          <AvatarFallback className="bg-primary/10 text-primary font-medium">
+            {community.name?.charAt(0).toUpperCase()}
+          </AvatarFallback>
+        </Avatar>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="font-medium text-foreground truncate">
+                {community.name}
+              </span>
+              {isOwner && (
+                <Crown className="h-3.5 w-3.5 text-primary flex-shrink-0" />
+              )}
+            </div>
+            {lastPost && (
+              <span className="text-[10px] text-muted-foreground flex-shrink-0">
+                {formatDistanceToNow(new Date(lastPost.created_at), { addSuffix: false })}
+              </span>
+            )}
+          </div>
+          <p className="text-sm text-muted-foreground truncate">
+            {isOwner ? "You created this" : `by ${ownerProfile?.username || "Unknown"}`}
+          </p>
+        </div>
+      </button>
+    );
   };
 
   return (
@@ -131,16 +193,16 @@ export function ChatSidebar({ isOpen, onClose }: ChatSidebarProps) {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search..."
+              placeholder="Search communities..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-muted border-0 rounded-lg h-10"
+              className="pl-10 bg-muted border-0 rounded-xl h-10"
             />
           </div>
         </div>
 
         {/* Communities List */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto px-2">
           {isLoading ? (
             <div className="space-y-1 p-2">
               {[1, 2, 3, 4, 5].map((i) => (
@@ -153,59 +215,52 @@ export function ChatSidebar({ isOpen, onClose }: ChatSidebarProps) {
                 </div>
               ))}
             </div>
-          ) : filteredCommunities && filteredCommunities.length > 0 ? (
-            <div className="space-y-0.5 p-2">
-              {filteredCommunities.map((community: any) => {
-                const isActive = location.pathname === `/community/${community.id}`;
-                const lastPost = community.posts?.[0];
-                
-                return (
-                  <button
-                    key={community.id}
-                    onClick={() => handleNavigate(`/community/${community.id}`)}
-                    className={cn(
-                      "w-full flex items-center gap-3 p-3 rounded-lg transition-colors text-left",
-                      isActive ? "bg-sidebar-accent" : "hover:bg-sidebar-accent/50"
-                    )}
-                  >
-                    <Avatar className="h-12 w-12 flex-shrink-0">
-                      <AvatarImage src={community.avatar_url || ""} />
-                      <AvatarFallback className="bg-primary/10 text-primary font-medium">
-                        {community.name.charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-medium text-foreground truncate">
-                          {community.name}
-                        </span>
-                        {lastPost && (
-                          <span className="text-xs text-muted-foreground flex-shrink-0">
-                            {formatDistanceToNow(new Date(lastPost.created_at), { addSuffix: false })}
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-sm text-muted-foreground truncate">
-                        {community.description || "No messages yet"}
-                      </p>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
           ) : (
-            <div className="flex flex-col items-center justify-center p-8 text-center">
-              <Users className="h-12 w-12 text-muted-foreground/30 mb-4" />
-              <p className="text-muted-foreground text-sm">
-                {searchQuery ? "No communities found" : "No communities yet"}
-              </p>
-              <Button
-                variant="link"
-                onClick={() => handleNavigate("/create-community")}
-                className="mt-2 text-primary"
-              >
-                Create your first community
-              </Button>
+            <div className="space-y-4 pb-4">
+              {/* Joined Communities */}
+              {filteredJoined.length > 0 && (
+                <div>
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-3 mb-2">
+                    Joined ({filteredJoined.length})
+                  </h3>
+                  <div className="space-y-0.5">
+                    {filteredJoined.map((community: any) => (
+                      <CommunityItem key={community.id} community={community} isOwner={false} />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Owned Communities */}
+              {filteredOwned.length > 0 && (
+                <div>
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-3 mb-2">
+                    Created ({filteredOwned.length})
+                  </h3>
+                  <div className="space-y-0.5">
+                    {filteredOwned.map((community: any) => (
+                      <CommunityItem key={community.id} community={community} isOwner={true} />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Empty State */}
+              {filteredJoined.length === 0 && filteredOwned.length === 0 && (
+                <div className="flex flex-col items-center justify-center p-8 text-center">
+                  <Users className="h-12 w-12 text-muted-foreground/30 mb-4" />
+                  <p className="text-muted-foreground text-sm">
+                    {searchQuery ? "No communities found" : "No communities yet"}
+                  </p>
+                  <Button
+                    variant="link"
+                    onClick={() => handleNavigate("/create-community")}
+                    className="mt-2 text-primary"
+                  >
+                    Create your first community
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -236,7 +291,7 @@ export function ChatSidebar({ isOpen, onClose }: ChatSidebarProps) {
         <div className="p-3 border-t border-sidebar-border">
           <Button
             onClick={() => handleNavigate("/create-community")}
-            className="w-full rounded-lg py-5"
+            className="w-full rounded-xl py-5"
           >
             <Plus className="h-5 w-5 mr-2" />
             New Community

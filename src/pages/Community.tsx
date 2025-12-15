@@ -6,15 +6,14 @@ import { ChatLayout } from "@/components/layout/ChatLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { MediaPreview } from "@/components/MediaPreview";
 import { VoiceRecorder } from "@/components/VoiceRecorder";
 import { AudioPlayer } from "@/components/AudioPlayer";
 import { EmojiType } from "@/services/notificationService";
 import {
-  ArrowLeft, Users, Send, Image as ImageIcon, CheckCircle2, Search, X,
-  ChevronDown, ChevronUp, MessageCircle, Heart, MoreVertical, Info
+  ArrowLeft, Users, Send, Image as ImageIcon,
+  ChevronDown, MessageCircle, Heart, Info
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -436,7 +435,7 @@ export default function Community() {
           ) : (
             <Button 
               size="lg" 
-              onClick={() => navigate(`/community-pricing/${id}`)}
+              onClick={() => navigate(`/community/${id}/pricing`)}
               className="rounded-xl px-8 py-6"
             >
               View Pricing & Join
@@ -458,311 +457,309 @@ export default function Community() {
 
   return (
     <ChatLayout showSidebar={false}>
-      <div className="flex h-full">
-        {/* Main Chat Area */}
-        <div className="flex-1 flex flex-col min-w-0">
-          {/* Header */}
-          <header className="flex items-center gap-3 px-4 py-3 bg-card border-b border-border/50 flex-shrink-0">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate("/dashboard")}
-              className="rounded-full h-9 w-9 flex-shrink-0"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            
-            <Avatar className="h-10 w-10 flex-shrink-0">
-              <AvatarImage src={community.avatar_url || ""} />
-              <AvatarFallback className="bg-primary/10 text-primary">{community.name[0]}</AvatarFallback>
-            </Avatar>
-            
-            <div className="flex-1 min-w-0">
-              <h1 className="font-semibold text-foreground truncate">{community.name}</h1>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Users className="h-3.5 w-3.5" />
-                <span>{members?.length || 0} members</span>
-              </div>
+      <div className="flex h-full flex-col">
+        {/* Header */}
+        <header className="flex items-center gap-3 px-4 py-3 bg-card border-b border-border/50 flex-shrink-0">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate("/dashboard")}
+            className="rounded-full h-9 w-9 flex-shrink-0"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          
+          <Avatar className="h-10 w-10 flex-shrink-0">
+            <AvatarImage src={community.avatar_url || ""} />
+            <AvatarFallback className="bg-primary/10 text-primary">{community.name[0]}</AvatarFallback>
+          </Avatar>
+          
+          <div className="flex-1 min-w-0">
+            <h1 className="font-semibold text-foreground truncate">{community.name}</h1>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Users className="h-3.5 w-3.5" />
+              <span>{members?.length || 0} members</span>
             </div>
+          </div>
 
-            <div className="flex items-center gap-1">
-              <div className="relative hidden sm:block">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 w-40 lg:w-52 h-9 bg-muted border-0 rounded-lg"
+          <div className="flex items-center gap-1">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="rounded-full h-9 w-9">
+                  <Info className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent className="w-80">
+                <SheetHeader>
+                  <SheetTitle>Community Info</SheetTitle>
+                </SheetHeader>
+                <div className="mt-6 space-y-6">
+                  <div className="text-center">
+                    <Avatar className="h-20 w-20 mx-auto mb-3">
+                      <AvatarImage src={community.avatar_url || ""} />
+                      <AvatarFallback className="text-2xl bg-primary/10 text-primary">{community.name[0]}</AvatarFallback>
+                    </Avatar>
+                    <h2 className="font-semibold text-lg">{community.name}</h2>
+                    <p className="text-sm text-muted-foreground mt-1">{community.description}</p>
+                  </div>
+                  
+                  <div>
+                    <h3 className="font-medium mb-3 text-sm text-muted-foreground uppercase tracking-wide">
+                      Members ({members?.length || 0})
+                    </h3>
+                    <div className="space-y-2 max-h-60 overflow-y-auto">
+                      {members?.map((member: any) => (
+                        <div key={member.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={member.profiles?.avatar_url || ""} />
+                            <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                              {member.profiles?.username?.[0]?.toUpperCase() || "?"}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{member.profiles?.username || "Unknown"}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {member.user_id === community.owner_id ? "Owner" : "Member"}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
+        </header>
+
+        {/* Messages */}
+        <div 
+          ref={chatContainerRef}
+          onScroll={handleScroll}
+          className="flex-1 overflow-y-auto p-4 space-y-4 bg-chat-bg"
+        >
+          {filteredPosts?.length === 0 && (
+            <div className="flex flex-col items-center justify-center h-full text-center">
+              <MessageCircle className="h-12 w-12 text-muted-foreground/30 mb-4" />
+              <p className="text-muted-foreground">No messages yet</p>
+              <p className="text-sm text-muted-foreground/70">Be the first to post something!</p>
+            </div>
+          )}
+          
+          {filteredPosts?.map((post: any) => {
+            // Owner posts on right, joiner posts on left
+            const isOwn = post.author_id === profile?.id;
+            const isPostOwner = post.author_id === community.owner_id;
+            const postComments = commentsData?.filter((c: any) => c.post_id === post.id) || [];
+            const userReaction = post.reactions?.find((r: any) => r.user_id === profile?.id);
+
+            return (
+              <div 
+                key={post.id} 
+                className={cn("flex gap-3 animate-fade-in", isPostOwner ? "flex-row-reverse" : "flex-row")}
+              >
+                {!isPostOwner && (
+                  <Avatar className="h-8 w-8 flex-shrink-0 mt-1">
+                    <AvatarImage src={post.profiles?.avatar_url} />
+                    <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                      {post.profiles?.username?.[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                )}
+                
+                <div className={cn("max-w-[75%] space-y-1", isPostOwner && "items-end")}>
+                  {!isPostOwner && (
+                    <span className="text-xs font-medium text-primary ml-1">
+                      {post.profiles?.username}
+                    </span>
+                  )}
+                  
+                  {/* Message Bubble */}
+                  <div className={cn(
+                    "rounded-2xl px-4 py-2 shadow-sm",
+                    isPostOwner 
+                      ? "bg-chat-outgoing rounded-br-md" 
+                      : "bg-chat-incoming rounded-bl-md"
+                  )}>
+                    {post.content && (
+                      <p className="text-foreground text-sm whitespace-pre-wrap break-words">
+                        {post.content}
+                      </p>
+                    )}
+                    
+                    {/* Media */}
+                    {post.media_urls?.map((url: string, idx: number) => {
+                      const isAudio = url.includes('voice-') || url.endsWith('.webm') || url.endsWith('.mp3');
+                      const isVideo = url.endsWith('.mp4') || url.endsWith('.mov');
+                      
+                      if (isAudio) return <AudioPlayer key={idx} audioUrl={url} />;
+                      if (isVideo) return (
+                        <video key={idx} src={url} controls className="rounded-xl max-h-60 mt-2" />
+                      );
+                      return (
+                        <img 
+                          key={idx} 
+                          src={url} 
+                          alt="Media" 
+                          className="rounded-xl max-h-60 mt-2 cursor-pointer"
+                          loading="lazy"
+                        />
+                      );
+                    })}
+                    
+                    <div className={cn(
+                      "flex items-center gap-1 mt-1",
+                      isPostOwner ? "justify-end" : "justify-start"
+                    )}>
+                      <span className="text-[10px] text-muted-foreground">
+                        {formatDistanceToNow(new Date(post.created_at), { addSuffix: false })}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {/* Reactions */}
+                  <div className={cn("flex items-center gap-2 px-1", isPostOwner && "justify-end")}>
+                    <button
+                      onClick={() => toggleReactionMutation.mutate({ postId: post.id, emoji: "❤️" })}
+                      className={cn(
+                        "flex items-center gap-1 text-xs transition-all",
+                        userReaction?.emoji === "❤️" ? "text-like" : "text-muted-foreground hover:text-like",
+                        animatingPost === post.id && "animate-bounce-scale"
+                      )}
+                    >
+                      <Heart className={cn("h-3.5 w-3.5", userReaction?.emoji === "❤️" && "fill-like text-like")} />
+                      {post.reactions?.length > 0 && <span>{post.reactions.length}</span>}
+                    </button>
+                    
+                    <button
+                      onClick={() => setShowComments({ ...showComments, [post.id]: !showComments[post.id] })}
+                      className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-all"
+                    >
+                      <MessageCircle className="h-3.5 w-3.5" />
+                      {postComments.length > 0 && <span>{postComments.length}</span>}
+                    </button>
+                  </div>
+                  
+                  {/* Comments */}
+                  {showComments[post.id] && (
+                    <div className="space-y-2 ml-4 pt-2 animate-fade-in">
+                      {postComments.map((comment: any) => (
+                        <div key={comment.id} className="flex items-start gap-2">
+                          <Avatar className="h-6 w-6">
+                            <AvatarImage src={comment.profiles?.avatar_url} />
+                            <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
+                              {comment.profiles?.username?.[0]}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="bg-card rounded-xl px-3 py-1.5 text-xs">
+                            <span className="font-medium text-primary">{comment.profiles?.username}</span>
+                            <p className="text-foreground">{comment.content}</p>
+                          </div>
+                        </div>
+                      ))}
+                      
+                      <div className="flex gap-2 mt-2">
+                        <Input
+                          value={commentContent[post.id] || ""}
+                          onChange={(e) => setCommentContent({ ...commentContent, [post.id]: e.target.value })}
+                          placeholder="Add a comment..."
+                          className="text-xs h-8 bg-card border-border/50 rounded-full px-3"
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" && commentContent[post.id]?.trim()) {
+                              createCommentMutation.mutate({ postId: post.id, content: commentContent[post.id] });
+                            }
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                {isPostOwner && (
+                  <Avatar className="h-8 w-8 flex-shrink-0 mt-1">
+                    <AvatarImage src={post.profiles?.avatar_url} />
+                    <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                      {post.profiles?.username?.[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                )}
+              </div>
+            );
+          })}
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Scroll to Bottom */}
+        {showScrollButton && (
+          <button
+            onClick={scrollToBottom}
+            className="absolute bottom-24 right-6 z-20 bg-card text-foreground rounded-full p-2 shadow-elegant border border-border"
+          >
+            <ChevronDown className="h-5 w-5" />
+          </button>
+        )}
+
+        {/* Input Area - Always visible for members */}
+        {canPost && (
+          <div className="bg-card border-t border-border/50 p-3 flex-shrink-0">
+            <MediaPreview files={mediaFiles} onRemove={handleRemoveFile} />
+            <div className="flex items-center gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept="image/*,video/*"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="rounded-full h-10 w-10 flex-shrink-0"
+              >
+                <ImageIcon className="h-5 w-5 text-muted-foreground" />
+              </Button>
+              
+              <VoiceRecorder
+                onSend={(blob) => sendVoiceMessageMutation.mutate(blob)}
+                onCancel={() => {}}
+              />
+              
+              <div className="flex-1 flex items-center bg-muted rounded-full px-4 h-11 border border-border/50">
+                <input
+                  type="text"
+                  value={postContent}
+                  onChange={(e) => setPostContent(e.target.value)}
+                  placeholder="Type a message..."
+                  className="flex-1 bg-transparent text-sm focus:outline-none text-foreground placeholder:text-muted-foreground"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      if (postContent.trim() || mediaFiles.length > 0) {
+                        createPostMutation.mutate();
+                      }
+                    }
+                  }}
                 />
               </div>
               
-              <Sheet>
-                <SheetTrigger asChild>
-                  <Button variant="ghost" size="icon" className="rounded-full h-9 w-9">
-                    <Info className="h-5 w-5" />
-                  </Button>
-                </SheetTrigger>
-                <SheetContent className="w-80">
-                  <SheetHeader>
-                    <SheetTitle>Community Info</SheetTitle>
-                  </SheetHeader>
-                  <div className="mt-6 space-y-6">
-                    <div className="text-center">
-                      <Avatar className="h-20 w-20 mx-auto mb-3">
-                        <AvatarImage src={community.avatar_url || ""} />
-                        <AvatarFallback className="text-2xl bg-primary/10 text-primary">{community.name[0]}</AvatarFallback>
-                      </Avatar>
-                      <h2 className="font-semibold text-lg">{community.name}</h2>
-                      <p className="text-sm text-muted-foreground mt-1">{community.description}</p>
-                    </div>
-                    
-                    <div>
-                      <h3 className="font-medium mb-3 text-sm text-muted-foreground uppercase tracking-wide">
-                        Members ({members?.length || 0})
-                      </h3>
-                      <div className="space-y-2 max-h-60 overflow-y-auto">
-                        {members?.map((member: any) => (
-                          <div key={member.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted">
-                            <Avatar className="h-8 w-8">
-                              <AvatarImage src={member.profiles?.avatar_url || ""} />
-                              <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                                {member.profiles?.username?.[0]?.toUpperCase() || "?"}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium truncate">{member.profiles?.username || "Unknown"}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {member.user_id === community.owner_id ? "Owner" : "Member"}
-                              </p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </SheetContent>
-              </Sheet>
+              <Button
+                onClick={() => createPostMutation.mutate()}
+                disabled={(!postContent.trim() && mediaFiles.length === 0) || uploading}
+                size="icon"
+                className="rounded-full h-10 w-10 flex-shrink-0"
+              >
+                {uploading ? (
+                  <span className="animate-pulse">...</span>
+                ) : (
+                  <Send className="h-5 w-5" />
+                )}
+              </Button>
             </div>
-          </header>
-
-          {/* Messages */}
-          <div 
-            ref={chatContainerRef}
-            onScroll={handleScroll}
-            className="flex-1 overflow-y-auto p-4 space-y-4 bg-chat-bg"
-          >
-            {filteredPosts?.length === 0 && (
-              <div className="flex flex-col items-center justify-center h-full text-center">
-                <MessageCircle className="h-12 w-12 text-muted-foreground/30 mb-4" />
-                <p className="text-muted-foreground">No messages yet</p>
-                <p className="text-sm text-muted-foreground/70">Be the first to post something!</p>
-              </div>
-            )}
-            
-            {filteredPosts?.map((post: any) => {
-              const isOwn = post.author_id === profile?.id;
-              const postComments = commentsData?.filter((c: any) => c.post_id === post.id) || [];
-              const userReaction = post.reactions?.find((r: any) => r.user_id === profile?.id);
-
-              return (
-                <div 
-                  key={post.id} 
-                  className={cn("flex gap-3 animate-fade-in", isOwn && "flex-row-reverse")}
-                >
-                  {!isOwn && (
-                    <Avatar className="h-8 w-8 flex-shrink-0 mt-1">
-                      <AvatarImage src={post.profiles?.avatar_url} />
-                      <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                        {post.profiles?.username?.[0]}
-                      </AvatarFallback>
-                    </Avatar>
-                  )}
-                  
-                  <div className={cn("max-w-[75%] space-y-1", isOwn && "items-end")}>
-                    {!isOwn && (
-                      <span className="text-xs font-medium text-primary ml-1">
-                        {post.profiles?.username}
-                      </span>
-                    )}
-                    
-                    {/* Message Bubble */}
-                    <div className={cn(
-                      "rounded-2xl px-4 py-2 shadow-sm",
-                      isOwn 
-                        ? "bg-chat-outgoing rounded-br-md" 
-                        : "bg-chat-incoming rounded-bl-md"
-                    )}>
-                      {post.content && (
-                        <p className="text-foreground text-sm whitespace-pre-wrap break-words">
-                          {post.content}
-                        </p>
-                      )}
-                      
-                      {/* Media */}
-                      {post.media_urls?.map((url: string, idx: number) => {
-                        const isAudio = url.includes('voice-') || url.endsWith('.webm') || url.endsWith('.mp3');
-                        const isVideo = url.endsWith('.mp4') || url.endsWith('.mov');
-                        
-                        if (isAudio) return <AudioPlayer key={idx} audioUrl={url} />;
-                        if (isVideo) return (
-                          <video key={idx} src={url} controls className="rounded-xl max-h-60 mt-2" />
-                        );
-                        return (
-                          <img 
-                            key={idx} 
-                            src={url} 
-                            alt="Media" 
-                            className="rounded-xl max-h-60 mt-2 cursor-pointer"
-                            loading="lazy"
-                          />
-                        );
-                      })}
-                      
-                      <div className={cn(
-                        "flex items-center gap-1 mt-1",
-                        isOwn ? "justify-end" : "justify-start"
-                      )}>
-                        <span className="text-[10px] text-muted-foreground">
-                          {formatDistanceToNow(new Date(post.created_at), { addSuffix: false })}
-                        </span>
-                      </div>
-                    </div>
-                    
-                    {/* Reactions */}
-                    <div className={cn("flex items-center gap-2 px-1", isOwn && "justify-end")}>
-                      <button
-                        onClick={() => toggleReactionMutation.mutate({ postId: post.id, emoji: "❤️" })}
-                        className={cn(
-                          "flex items-center gap-1 text-xs transition-all",
-                          userReaction?.emoji === "❤️" ? "text-primary" : "text-muted-foreground hover:text-primary",
-                          animatingPost === post.id && "animate-bounce-scale"
-                        )}
-                      >
-                        <Heart className={cn("h-3.5 w-3.5", userReaction?.emoji === "❤️" && "fill-primary")} />
-                        {post.reactions?.length > 0 && <span>{post.reactions.length}</span>}
-                      </button>
-                      
-                      <button
-                        onClick={() => setShowComments({ ...showComments, [post.id]: !showComments[post.id] })}
-                        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-all"
-                      >
-                        <MessageCircle className="h-3.5 w-3.5" />
-                        {postComments.length > 0 && <span>{postComments.length}</span>}
-                      </button>
-                    </div>
-                    
-                    {/* Comments */}
-                    {showComments[post.id] && (
-                      <div className="space-y-2 ml-4 pt-2 animate-fade-in">
-                        {postComments.map((comment: any) => (
-                          <div key={comment.id} className="flex items-start gap-2">
-                            <Avatar className="h-6 w-6">
-                              <AvatarImage src={comment.profiles?.avatar_url} />
-                              <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
-                                {comment.profiles?.username?.[0]}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="bg-card rounded-xl px-3 py-1.5 text-xs">
-                              <span className="font-medium text-primary">{comment.profiles?.username}</span>
-                              <p className="text-foreground">{comment.content}</p>
-                            </div>
-                          </div>
-                        ))}
-                        
-                        <div className="flex gap-2 mt-2">
-                          <Input
-                            value={commentContent[post.id] || ""}
-                            onChange={(e) => setCommentContent({ ...commentContent, [post.id]: e.target.value })}
-                            placeholder="Add a comment..."
-                            className="text-xs h-8 bg-card border-border/50 rounded-full px-3"
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter" && commentContent[post.id]?.trim()) {
-                                createCommentMutation.mutate({ postId: post.id, content: commentContent[post.id] });
-                              }
-                            }}
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-            <div ref={messagesEndRef} />
           </div>
-
-          {/* Scroll to Bottom */}
-          {showScrollButton && (
-            <button
-              onClick={scrollToBottom}
-              className="absolute bottom-24 right-6 z-20 bg-card text-foreground rounded-full p-2 shadow-elegant border border-border"
-            >
-              <ChevronDown className="h-5 w-5" />
-            </button>
-          )}
-
-          {/* Input Area */}
-          {canPost && (
-            <div className="bg-card border-t border-border/50 p-3 flex-shrink-0">
-              <MediaPreview files={mediaFiles} onRemove={handleRemoveFile} />
-              <div className="flex items-center gap-2">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  multiple
-                  accept="image/*,video/*"
-                  onChange={handleFileSelect}
-                  className="hidden"
-                />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploading}
-                  className="rounded-full h-10 w-10 flex-shrink-0"
-                >
-                  <ImageIcon className="h-5 w-5 text-muted-foreground" />
-                </Button>
-                
-                <VoiceRecorder
-                  onSend={(blob) => sendVoiceMessageMutation.mutate(blob)}
-                  onCancel={() => {}}
-                />
-                
-                <div className="flex-1 flex items-center bg-muted rounded-full px-4 h-10 border border-border/50">
-                  <input
-                    type="text"
-                    value={postContent}
-                    onChange={(e) => setPostContent(e.target.value)}
-                    placeholder="Type a message..."
-                    className="flex-1 bg-transparent text-sm focus:outline-none text-foreground placeholder:text-muted-foreground"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        if (postContent.trim() || mediaFiles.length > 0) {
-                          createPostMutation.mutate();
-                        }
-                      }
-                    }}
-                  />
-                </div>
-                
-                <Button
-                  onClick={() => createPostMutation.mutate()}
-                  disabled={(!postContent.trim() && mediaFiles.length === 0) || uploading}
-                  size="icon"
-                  className="rounded-full h-10 w-10 flex-shrink-0"
-                >
-                  {uploading ? (
-                    <span className="animate-pulse">...</span>
-                  ) : (
-                    <Send className="h-5 w-5" />
-                  )}
-                </Button>
-              </div>
-            </div>
-          )}
-        </div>
+        )}
       </div>
     </ChatLayout>
   );

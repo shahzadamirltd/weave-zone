@@ -1,20 +1,19 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Sidebar } from "@/components/layout/Sidebar";
+import { ChatLayout } from "@/components/layout/ChatLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Input } from "@/components/ui/input";
-import { Search, Share2, Check, Settings, X } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Share2, Check, Settings, Users, MessageCircle, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
+import { formatDistanceToNow } from "date-fns";
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [searchQuery, setSearchQuery] = useState("");
 
   const { data: profile } = useQuery({
     queryKey: ["profile"],
@@ -32,334 +31,169 @@ export default function Dashboard() {
     },
   });
 
-  const { data: ownedCommunities, isLoading: isLoadingOwned } = useQuery({
-    queryKey: ["owned-communities", profile?.id],
+  const { data: communities, isLoading } = useQuery({
+    queryKey: ["all-communities", profile?.id],
     queryFn: async () => {
       if (!profile) return [];
 
-      const { data } = await supabase
+      // Get owned communities
+      const { data: owned } = await supabase
         .from("communities")
         .select("*, memberships(count)")
         .eq("owner_id", profile.id)
         .order("created_at", { ascending: false });
 
-      return data || [];
-    },
-    enabled: !!profile,
-  });
-
-  const { data: joinedCommunities, isLoading: isLoadingJoined } = useQuery({
-    queryKey: ["joined-communities", profile?.id],
-    queryFn: async () => {
-      if (!profile) return [];
-
+      // Get joined communities
       const { data: memberships } = await supabase
         .from("memberships")
-        .select(`
-          community_id,
-          communities (
-            *,
-            memberships (count)
-          )
-        `)
+        .select(`community_id, communities(*, memberships(count))`)
         .eq("user_id", profile.id)
         .neq("role", "owner");
 
-      return memberships?.map(m => (m as any).communities).filter(Boolean) || [];
+      const joined = memberships?.map(m => (m as any).communities).filter(Boolean) || [];
+      
+      return [...(owned || []), ...joined];
     },
     enabled: !!profile,
   });
 
-  const { data: searchResults } = useQuery({
-    queryKey: ["search-communities", searchQuery],
-    queryFn: async () => {
-      if (!searchQuery.trim()) return [];
-
-      const { data } = await supabase
-        .from("communities")
-        .select("*, memberships(count)")
-        .or(`name.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%,handle.ilike.%${searchQuery}%`)
-        .eq("is_private", false)
-        .order("created_at", { ascending: false })
-        .limit(20);
-
-      return data || [];
-    },
-    enabled: !!searchQuery.trim(),
-  });
-
-  const joinCommunityMutation = useMutation({
-    mutationFn: async (communityId: string) => {
-      if (!profile) throw new Error("Not authenticated");
-
-      const { error } = await supabase
-        .from("memberships")
-        .insert({
-          community_id: communityId,
-          user_id: profile.id,
-          role: "member"
-        });
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "You've joined the community!",
-      });
-      queryClient.invalidateQueries({ queryKey: ["joined-communities"] });
-      queryClient.invalidateQueries({ queryKey: ["search-communities"] });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to join community",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const CommunityCard = ({ community, showEdit, showJoin }: any) => {
-    const { toast } = useToast();
+  const CommunityCard = ({ community }: { community: any }) => {
     const [copied, setCopied] = useState(false);
     const memberCount = community.memberships?.[0]?.count || 0;
-    const isPaid = community.pricing_type !== "free";
-    const price = community.price_amount || 0;
     const isOwner = community.owner_id === profile?.id;
-    const isMember = joinedCommunities?.some((c: any) => c.id === community.id);
-
-    const communityUrl = `${window.location.origin}/community/${community.id}`;
 
     const handleShare = (e: React.MouseEvent) => {
       e.stopPropagation();
-      navigator.clipboard.writeText(communityUrl);
+      const url = `${window.location.origin}/community/${community.id}`;
+      navigator.clipboard.writeText(url);
       setCopied(true);
-      toast({
-        title: "Link copied!",
-        description: "Community link copied to clipboard",
-      });
+      toast({ title: "Link copied!" });
       setTimeout(() => setCopied(false), 2000);
     };
 
-    const handleEdit = (e: React.MouseEvent) => {
-      e.stopPropagation();
-      navigate(`/community/${community.id}/edit`);
-    };
-
-    const handleJoin = (e: React.MouseEvent) => {
-      e.stopPropagation();
-      joinCommunityMutation.mutate(community.id);
-    };
-
     return (
-      <div 
-        className="flex items-center gap-4 bg-card rounded-2xl p-4 hover:shadow-elegant transition-all cursor-pointer border border-border/30"
+      <button
         onClick={() => navigate(`/community/${community.id}`)}
+        className="w-full flex items-center gap-4 p-4 bg-card rounded-xl hover:shadow-elegant transition-all text-left border border-border/50"
       >
-        {/* Community Image */}
-        <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-primary/20 to-secondary/20 flex-shrink-0 overflow-hidden">
-          {community.avatar_url ? (
-            <img src={community.avatar_url} alt={community.name} className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-2xl font-bold text-primary">
-              {community.name.charAt(0).toUpperCase()}
-            </div>
-          )}
-        </div>
+        <Avatar className="h-14 w-14 flex-shrink-0">
+          <AvatarImage src={community.avatar_url || ""} />
+          <AvatarFallback className="bg-primary/10 text-primary text-lg font-semibold">
+            {community.name.charAt(0).toUpperCase()}
+          </AvatarFallback>
+        </Avatar>
 
-        {/* Community Info */}
         <div className="flex-1 min-w-0">
-          <h3 className="text-lg font-semibold text-card-foreground mb-1 truncate">
-            {community.name}
-          </h3>
+          <div className="flex items-center gap-2 mb-1">
+            <h3 className="font-semibold text-foreground truncate">{community.name}</h3>
+            {isOwner && (
+              <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-primary/10 text-primary">
+                Owner
+              </Badge>
+            )}
+          </div>
           <div className="flex items-center gap-3 text-sm text-muted-foreground">
-            <span>{memberCount.toLocaleString()} Members</span>
+            <span className="flex items-center gap-1">
+              <Users className="h-3.5 w-3.5" />
+              {memberCount}
+            </span>
+            <span className="flex items-center gap-1">
+              <MessageCircle className="h-3.5 w-3.5" />
+              {community.pricing_type === "free" ? "Free" : `$${(community.price_amount / 100).toFixed(0)}`}
+            </span>
           </div>
         </div>
 
-        {/* Price/Status and Action */}
-        <div className="flex items-center gap-3">
-          {isPaid ? (
-            <>
-              <div className="text-right">
-                <div className="text-xs text-muted-foreground mb-1">Price</div>
-                <div className="text-lg font-bold text-foreground">
-                  ${(price / 100).toFixed(2)}
-                </div>
-              </div>
-              <Badge variant="secondary" className="bg-green-500/10 text-green-600 hover:bg-green-500/20 px-3 py-1">
-                Paid
-              </Badge>
-            </>
-          ) : (
-            <>
-              <div className="text-right">
-                <div className="text-xs text-muted-foreground mb-1">Status</div>
-                <div className="text-lg font-bold text-foreground">Free</div>
-              </div>
-              <Badge variant="secondary" className="bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 px-3 py-1">
-                Free
-              </Badge>
-            </>
-          )}
-          {showEdit && (
-            <Button 
-              size="sm"
-              variant="outline"
-              className="rounded-xl w-10 h-10 p-0"
-              onClick={handleEdit}
-            >
-              <Settings className="h-4 w-4" />
-            </Button>
-          )}
-          <Button 
-            size="sm"
-            variant="outline"
-            className="rounded-xl w-10 h-10 p-0"
-            onClick={handleShare}
-          >
-            {copied ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
-          </Button>
-          {showJoin && !isOwner && !isMember && (
-            <Button 
-              size="sm"
-              className="rounded-xl px-6"
-              onClick={handleJoin}
-              disabled={joinCommunityMutation.isPending}
-            >
-              {joinCommunityMutation.isPending ? "Joining..." : "Join"}
-            </Button>
-          )}
-          {!showJoin && (
-            <Button 
-              size="sm"
-              className="rounded-xl px-6"
+        <div className="flex items-center gap-2">
+          {isOwner && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 rounded-full"
               onClick={(e) => {
                 e.stopPropagation();
-                navigate(`/community/${community.id}`);
+                navigate(`/community/${community.id}/edit`);
               }}
             >
-              Open
+              <Settings className="h-4 w-4 text-muted-foreground" />
             </Button>
           )}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 rounded-full"
+            onClick={handleShare}
+          >
+            {copied ? (
+              <Check className="h-4 w-4 text-primary" />
+            ) : (
+              <Share2 className="h-4 w-4 text-muted-foreground" />
+            )}
+          </Button>
+          <ChevronRight className="h-5 w-5 text-muted-foreground" />
         </div>
-      </div>
+      </button>
     );
   };
 
   return (
-    <div className="flex min-h-screen">
-      <Sidebar />
-      
-      <main className="flex-1 ml-64">
-        {/* Header */}
-        <header className="sticky top-0 z-10 bg-card/98 backdrop-blur-md border-b border-border/30 px-8 py-4 shadow-card">
-          <div className="flex items-center justify-between gap-4">
-            <h1 className="text-2xl font-bold text-card-foreground">Communities</h1>
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="text"
-                placeholder="Search communities..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-10 bg-muted/40 border-border/40"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 hover:bg-accent rounded-full p-1"
+    <ChatLayout>
+      {/* Welcome Section */}
+      <div className="flex-1 flex flex-col bg-chat-bg">
+        <div className="flex-1 overflow-y-auto">
+          <div className="max-w-2xl mx-auto p-6 lg:p-8">
+            {/* Header */}
+            <div className="mb-8 pt-12 lg:pt-0">
+              <h1 className="text-2xl font-bold text-foreground mb-2">
+                Welcome back{profile?.username ? `, ${profile.username}` : ""}!
+              </h1>
+              <p className="text-muted-foreground">
+                Select a community to start chatting or create a new one.
+              </p>
+            </div>
+
+            {/* Communities */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                  Your Communities
+                </h2>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate("/create-community")}
+                  className="text-primary"
                 >
-                  <X className="h-3 w-3 text-muted-foreground" />
-                </button>
+                  + New
+                </Button>
+              </div>
+
+              {isLoading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="h-20 bg-card rounded-xl animate-pulse" />
+                  ))}
+                </div>
+              ) : communities && communities.length > 0 ? (
+                communities.map((community: any) => (
+                  <CommunityCard key={community.id} community={community} />
+                ))
+              ) : (
+                <div className="text-center py-16 bg-card rounded-xl border border-dashed border-border">
+                  <MessageCircle className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+                  <h3 className="font-medium text-foreground mb-2">No communities yet</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Create your first community to get started
+                  </p>
+                  <Button onClick={() => navigate("/create-community")}>
+                    Create Community
+                  </Button>
+                </div>
               )}
             </div>
           </div>
-        </header>
-
-        {/* Content */}
-        <div className="p-8">
-          <div className="max-w-5xl">
-            {searchQuery ? (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-semibold text-card-foreground">
-                    Search Results {searchResults && `(${searchResults.length})`}
-                  </h2>
-                </div>
-                {searchResults && searchResults.length > 0 ? (
-                  searchResults.map((community: any) => (
-                    <CommunityCard key={community.id} community={community} showJoin={true} />
-                  ))
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-20 glass-card border-2 border-dashed border-border/30 rounded-2xl">
-                    <Search className="h-12 w-12 text-muted-foreground mb-4" />
-                    <p className="text-center text-card-foreground font-medium">
-                      No communities found
-                    </p>
-                    <p className="text-center text-muted-foreground text-sm mt-1">
-                      Try searching with different keywords
-                    </p>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <Tabs defaultValue="owned" className="w-full">
-                <TabsList className="grid w-full max-w-md grid-cols-2 bg-accent/30">
-                  <TabsTrigger value="owned" className="data-[state=active]:bg-card data-[state=active]:shadow-sm">My Communities</TabsTrigger>
-                  <TabsTrigger value="joined" className="data-[state=active]:bg-card data-[state=active]:shadow-sm">Joined Communities</TabsTrigger>
-                </TabsList>
-              
-              <TabsContent value="owned" className="space-y-4 mt-6">
-                {isLoadingOwned ? (
-                  <div className="space-y-4">
-                    {[1, 2, 3].map((i) => (
-                      <div key={i} className="h-24 bg-muted/20 rounded-2xl animate-pulse" />
-                    ))}
-                  </div>
-                ) : ownedCommunities && ownedCommunities.length > 0 ? (
-                  ownedCommunities.map((community: any) => (
-                    <CommunityCard key={community.id} community={community} showEdit={true} />
-                  ))
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-20 glass-card border-2 border-dashed border-border/30 rounded-2xl">
-                    <p className="text-center text-card-foreground font-medium">
-                      No communities yet
-                    </p>
-                    <p className="text-center text-muted-foreground text-sm mt-1">
-                      Create your first community to get started
-                    </p>
-                  </div>
-                )}
-              </TabsContent>
-
-              <TabsContent value="joined" className="space-y-4 mt-6">
-                {isLoadingJoined ? (
-                  <div className="space-y-4">
-                    {[1, 2, 3].map((i) => (
-                      <div key={i} className="h-24 bg-muted/20 rounded-2xl animate-pulse" />
-                    ))}
-                  </div>
-                ) : joinedCommunities && joinedCommunities.length > 0 ? (
-                  joinedCommunities.map((community: any) => (
-                    <CommunityCard key={community.id} community={community} showEdit={false} />
-                  ))
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-20 glass-card border-2 border-dashed border-border/30 rounded-2xl">
-                    <p className="text-center text-card-foreground font-medium">
-                      No joined communities yet
-                    </p>
-                    <p className="text-center text-muted-foreground text-sm mt-1">
-                      Join a community to see it here
-                    </p>
-                  </div>
-                )}
-              </TabsContent>
-            </Tabs>
-            )}
-          </div>
         </div>
-      </main>
-    </div>
+      </div>
+    </ChatLayout>
   );
 }

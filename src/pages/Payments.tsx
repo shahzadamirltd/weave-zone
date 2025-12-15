@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Sidebar } from "@/components/layout/Sidebar";
+import { ChatLayout } from "@/components/layout/ChatLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDistanceToNow } from "date-fns";
 import { DollarSign, TrendingUp, Calendar } from "lucide-react";
@@ -41,18 +41,10 @@ export default function Payments() {
   const totalEarnings = payments?.reduce((sum, p) => sum + Number(p.creator_earnings || 0), 0) || 0;
 
   return (
-    <div className="flex min-h-screen bg-background">
-      <Sidebar />
-      
-      <main className="flex-1 ml-64">
-        <header className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border/50 px-8 py-4">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-foreground">Payments & Earnings</h1>
-          </div>
-        </header>
-
-        <div className="p-8">
-          <div className="max-w-5xl space-y-6">
+    <ChatLayout>
+      <div className="flex-1 overflow-y-auto bg-chat-bg">
+        <div className="max-w-4xl mx-auto p-6 lg:p-8 pt-16 lg:pt-8 space-y-6">
+          <h1 className="text-2xl font-bold text-foreground">Payments & Earnings</h1>
             {/* Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Card className="border-2">
@@ -123,9 +115,8 @@ export default function Payments() {
                 </div>
               </CardContent>
             </Card>
-          </div>
         </div>
-      </main>
-    </div>
+      </div>
+    </ChatLayout>
   );
 }

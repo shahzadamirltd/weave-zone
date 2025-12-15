@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { AppLayout } from "@/components/layout/AppLayout";
+import { ChatLayout } from "@/components/layout/ChatLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -125,12 +125,18 @@ export default function Profile() {
 
   if (!profile) {
     return (
-      <AppLayout>
-        <div className="text-center py-12">
+      <ChatLayout>
+        <div className="flex items-center justify-center h-full bg-chat-bg">
           <p className="text-muted-foreground">Loading...</p>
         </div>
-      </AppLayout>
+      </ChatLayout>
     );
+  }
+
+  return (
+    <ChatLayout>
+      <div className="flex-1 overflow-y-auto bg-chat-bg">
+        <div className="max-w-2xl mx-auto p-6 lg:p-8 pt-16 lg:pt-8 space-y-6">
   }
 
   return (
@@ -257,7 +263,7 @@ export default function Profile() {
             </Button>
           </CardContent>
         </Card>
+        </div>
       </div>
-    </AppLayout>
-  );
+    </ChatLayout>
 }

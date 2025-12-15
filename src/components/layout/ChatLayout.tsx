@@ -11,41 +11,41 @@ interface ChatLayoutProps {
   showSidebar?: boolean;
 }
 
+const ONBOARDING_KEY = "onboarding_completed";
+
 export function ChatLayout({ children, showSidebar = true }: ChatLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const location = useLocation();
 
   useEffect(() => {
-    // Check authentication status first
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      setIsAuthenticated(!!session);
-      
-      // Only show onboarding for authenticated users who haven't seen it
-      if (session) {
-        const hasSeenOnboarding = localStorage.getItem("hasSeenOnboarding");
-        if (!hasSeenOnboarding) {
+      if (session?.user) {
+        setUserId(session.user.id);
+        // Only show onboarding for NEW users who haven't completed it
+        const hasCompleted = localStorage.getItem(`${ONBOARDING_KEY}_${session.user.id}`);
+        if (!hasCompleted) {
           setShowOnboarding(true);
         }
       }
     };
-    
     checkAuth();
   }, []);
 
   const handleOnboardingComplete = () => {
-    localStorage.setItem("hasSeenOnboarding", "true");
+    if (userId) {
+      localStorage.setItem(`${ONBOARDING_KEY}_${userId}`, "true");
+    }
     setShowOnboarding(false);
   };
 
-  // Close sidebar when route changes on mobile
   useEffect(() => {
     setSidebarOpen(false);
   }, [location.pathname]);
 
-  if (showOnboarding && isAuthenticated) {
+  if (showOnboarding && userId) {
     return <Onboarding onComplete={handleOnboardingComplete} />;
   }
 
@@ -53,21 +53,17 @@ export function ChatLayout({ children, showSidebar = true }: ChatLayoutProps) {
     <div className="flex h-screen bg-chat-bg overflow-hidden w-full">
       {showSidebar && (
         <>
-          {/* Mobile menu button */}
           <Button
             variant="ghost"
             size="icon"
-            className="fixed top-4 left-4 z-30 lg:hidden bg-card shadow-elegant rounded-full h-10 w-10"
+            className="fixed top-3 left-3 z-30 lg:hidden bg-card shadow-sm rounded-full h-9 w-9"
             onClick={() => setSidebarOpen(true)}
           >
-            <Menu className="h-5 w-5" />
+            <Menu className="h-4 w-4" />
           </Button>
-
           <ChatSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         </>
       )}
-
-      {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {children}
       </main>

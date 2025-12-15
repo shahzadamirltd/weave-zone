@@ -112,115 +112,95 @@ export default function Settings() {
 
           <Card className="border border-border/50">
             <CardHeader>
-              <CardHeader>
-                <CardTitle>Profile Settings</CardTitle>
-                <CardDescription>Update your profile information</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="flex items-center gap-6">
-                  <Avatar className="h-20 w-20">
-                    <AvatarImage src={profile?.avatar_url} />
-                    <AvatarFallback className="text-2xl">
-                      {profile?.username?.charAt(0).toUpperCase() || "U"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <Label htmlFor="avatar" className="cursor-pointer">
-                      <div className="flex items-center gap-2 px-4 py-2 bg-secondary rounded-xl hover:bg-secondary/80 transition-all">
-                        <Upload className="h-4 w-4" />
-                        {uploading ? "Uploading..." : "Change Avatar"}
-                      </div>
-                    </Label>
-                    <Input
-                      id="avatar"
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleAvatarUpload}
-                      disabled={uploading}
-                    />
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div className="space-y-2">
-                  <Label htmlFor="username">Username</Label>
+              <CardTitle>Profile Settings</CardTitle>
+              <CardDescription>Update your profile information</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex items-center gap-6">
+                <Avatar className="h-20 w-20">
+                  <AvatarImage src={profile?.avatar_url} />
+                  <AvatarFallback className="text-2xl bg-primary/10 text-primary">
+                    {profile?.username?.charAt(0).toUpperCase() || "U"}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <Label htmlFor="avatar" className="cursor-pointer">
+                    <div className="flex items-center gap-2 px-4 py-2 bg-secondary rounded-xl hover:bg-secondary/80 transition-all">
+                      <Upload className="h-4 w-4" />
+                      {uploading ? "Uploading..." : "Change Avatar"}
+                    </div>
+                  </Label>
                   <Input
-                    id="username"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    placeholder="Enter your username"
-                    className="rounded-xl"
+                    id="avatar"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleAvatarUpload}
+                    disabled={uploading}
                   />
                 </div>
+              </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="bio">Bio</Label>
-                  <Input
-                    id="bio"
-                    value={bio}
-                    onChange={(e) => setBio(e.target.value)}
-                    placeholder="Tell us about yourself"
-                    className="rounded-xl"
-                  />
-                </div>
+              <Separator />
 
-                <Button 
-                  onClick={handleSave} 
-                  disabled={updateProfileMutation.isPending}
-                  className="w-full rounded-xl"
-                >
-                  {updateProfileMutation.isPending ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    "Save Changes"
-                  )}
-                </Button>
-              </CardContent>
-            </Card>
+              <div className="space-y-2">
+                <Label htmlFor="username">Username</Label>
+                <Input
+                  id="username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="Enter your username"
+                  className="rounded-xl"
+                />
+              </div>
 
-            <Card className="border border-destructive/50">
-              <CardHeader>
-                <CardTitle className="text-destructive">Sign Out</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Button 
-                  variant="destructive" 
-                  className="w-full rounded-xl"
-                  onClick={async () => {
-                    await supabase.auth.signOut();
-                    window.location.href = "/auth";
-                  }}
-                >
-                  Sign Out
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="bio">Bio</Label>
+                <Input
+                  id="bio"
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                  placeholder="Tell us about yourself"
+                  className="rounded-xl"
+                />
+              </div>
+
+              <Button 
+                onClick={handleSave} 
+                disabled={updateProfileMutation.isPending}
+                className="w-full rounded-xl"
+              >
+                {updateProfileMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  "Save Changes"
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="border border-destructive/50">
+            <CardHeader>
+              <CardTitle className="text-destructive">Sign Out</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Button 
+                variant="destructive" 
+                className="w-full rounded-xl"
+                onClick={async () => {
+                  await supabase.auth.signOut();
+                  window.location.href = "/auth";
+                }}
+              >
+                Sign Out
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </ChatLayout>
-  );
-}
-                <Button 
-                  variant="destructive" 
-                  className="w-full rounded-xl"
-                  onClick={async () => {
-                    await supabase.auth.signOut();
-                    window.location.href = "/auth";
-                  }}
-                >
-                  Sign Out
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </main>
-    </div>
   );
 }
